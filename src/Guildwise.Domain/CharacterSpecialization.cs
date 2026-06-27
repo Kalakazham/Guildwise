@@ -1,0 +1,36 @@
+namespace Guildwise.Domain;
+
+public enum CharacterSpecialization
+{
+    Unknown = 0,
+    Affliction = 1,
+    Assassination = 2,
+    Arcane = 3,
+    Arms = 4,
+    Balance = 5,
+    BeastMastery = 6,
+    Brewmaster = 7,
+    Destruction = 8,
+    Discipline = 9,
+    Demonology = 10,
+    Elemental = 11,
+    Enhancement = 12,
+    Fire = 13,
+    Feral = 14,
+    Frost = 15,
+    Guardian = 16,
+    Havoc = 17,
+    Holy = 18,
+    Marksmanship = 19,
+    Mistweaver = 20,
+    Outlaw = 21,
+    Protection = 22,
+    Restoration = 23,
+    Retribution = 24,
+    Shadow = 25,
+    Subtlety = 26,
+    Survival = 27,
+    Unholy = 28,
+    Vengeance = 29,
+    Windwalker = 30
+}

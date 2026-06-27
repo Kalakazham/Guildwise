@@ -13,6 +13,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Architecture documentation and ADRs.
 - Unit, integration and architecture test projects.
 - GitVersion setup for automated version calculation.
+- Manual guild roster domain model and unit tests for the first feature slice.
 
 ### Changed
 
