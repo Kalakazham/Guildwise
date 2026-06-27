@@ -14,6 +14,8 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Unit, integration and architecture test projects.
 - GitVersion setup for automated version calculation.
 - Manual guild roster domain model and unit tests for the first feature slice.
+- Application use cases and repository ports for manual guild roster setup.
+- Refactored the Application layer into explicit use case handlers.
 
 ### Changed
 

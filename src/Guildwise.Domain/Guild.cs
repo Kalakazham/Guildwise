@@ -94,6 +94,11 @@ public sealed class Guild
         }
     }
 
+    public void RemoveRaidTeam(Guid raidTeamId)
+    {
+        _raidTeams.RemoveAll(existing => existing.Id == raidTeamId);
+    }
+
     public void AddPlayerToRaidTeam(RaidTeam raidTeam, Player player)
     {
         ArgumentNullException.ThrowIfNull(raidTeam);
