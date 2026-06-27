@@ -114,3 +114,23 @@ Before making changes:
 5. Add or update tests.
 6. Run build and tests if possible.
 7. Summarize changed files and important decisions.
+
+## Versioning Rules
+
+Guildwise uses GitVersion for version calculation.
+
+- Do not manually hardcode or increment version numbers in project files unless explicitly requested.
+- Version numbers are calculated from Git history, branches and tags.
+- `main` contains stable release history.
+- `dev` contains integration builds and produces pre-release versions.
+- `feature/*` branches are used for individual feature work.
+- Real releases are created by tagging `main` with tags like `v0.1.0`, `v0.2.0` or `v1.0.0`.
+- Keep `CHANGELOG.md` updated for notable user-facing, architectural or tooling changes.
+- Do not create Git tags unless explicitly instructed by the user.
+
+Useful commands:
+
+```bash
+dotnet gitversion /showvariable FullSemVer
+dotnet build
+dotnet test
