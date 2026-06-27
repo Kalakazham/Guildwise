@@ -1,0 +1,160 @@
+.setup-page {
+    min-height: 100vh;
+    background: #f7f8fa;
+    color: #1f2933;
+    padding: 2rem;
+}
+
+.setup-header,
+.section-heading {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: 0 auto 1rem;
+    max-width: 72rem;
+}
+
+.setup-header h1,
+.section-heading h2 {
+    margin: 0;
+}
+
+.eyebrow {
+    color: #52606d;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin: 0 0 0.25rem;
+    text-transform: uppercase;
+}
+
+.workflow-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    margin: 0 auto;
+    max-width: 72rem;
+}
+
+.setup-panel,
+.roster-team {
+    background: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+    padding: 1rem;
+}
+
+.setup-panel h2,
+.roster-team h3 {
+    font-size: 1rem;
+    margin: 0 0 0.875rem;
+}
+
+label {
+    color: #3e4c59;
+    display: grid;
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+}
+
+input,
+select {
+    background: #ffffff;
+    border: 1px solid #bcccdc;
+    border-radius: 6px;
+    color: #1f2933;
+    font: inherit;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.6rem;
+}
+
+button {
+    background: #2563eb;
+    border: 1px solid #1d4ed8;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.8rem;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.secondary-action {
+    background: #ffffff;
+    border-color: #9fb3c8;
+    color: #1f2933;
+}
+
+.secondary-action:hover {
+    background: #eef2f7;
+}
+
+.status-message {
+    border-radius: 8px;
+    margin: 0 auto 1rem;
+    max-width: 72rem;
+    padding: 0.75rem 1rem;
+}
+
+.status-message.success {
+    background: #e3fcef;
+    border: 1px solid #8eedc7;
+}
+
+.status-message.error {
+    background: #ffe3e3;
+    border: 1px solid #ffbdbd;
+}
+
+.roster-section {
+    margin: 1.5rem auto 0;
+    max-width: 72rem;
+}
+
+.roster-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.empty-state {
+    color: #52606d;
+    margin: 0;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    border-bottom: 1px solid #d9e2ec;
+    padding: 0.55rem;
+    text-align: left;
+}
+
+th {
+    color: #52606d;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 700px) {
+    .setup-page {
+        padding: 1rem;
+    }
+
+    .setup-header,
+    .section-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

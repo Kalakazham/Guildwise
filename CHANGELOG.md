@@ -14,10 +14,13 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Unit, integration and architecture test projects.
 - GitVersion setup for automated version calculation.
 - Manual guild roster domain model and unit tests for the first feature slice.
-- Application use cases and repository ports for manual guild roster setup.
-- Refactored the Application layer into explicit use case handlers.
+- Application use case handlers for manual guild roster setup.
+- Temporary in-memory storage for guild and player aggregate roots.
+- Minimal Blazor verification UI for manual guild roster setup.
 
 ### Changed
+
+- Refactored the Application layer from a single roster application service into explicit use case handlers.
 
 ### Fixed
 

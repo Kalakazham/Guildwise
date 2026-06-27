@@ -1,8 +1,12 @@
+using Guildwise.Application;
+using Guildwise.Infrastructure;
 using Guildwise.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddGuildwiseApplicationUseCases();
+builder.Services.AddInfrastructure();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 

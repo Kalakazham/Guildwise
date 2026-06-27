@@ -1,7 +1,434 @@
-﻿@page "/"
+@page "/"
+@page "/roster-setup"
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+@using Guildwise.Application.Characters.CreateCharacter
+@using Guildwise.Application.Characters.SetMainCharacter
+@using Guildwise.Application.Contracts.Characters
+@using Guildwise.Application.Contracts.Guilds
+@using Guildwise.Application.Contracts.Players
+@using Guildwise.Application.Contracts.RaidTeams
+@using Guildwise.Application.GuildMembers.AddPlayerToGuild
+@using Guildwise.Application.Guilds.CreateGuild
+@using Guildwise.Application.Guilds.ListGuilds
+@using Guildwise.Application.Players.CreatePlayer
+@using Guildwise.Application.Players.ListPlayers
+@using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam
+@using Guildwise.Application.RaidTeams.CreateRaidTeam
+@using Guildwise.Application.RaidTeams.ListRaidTeamsForGuild
+@using Guildwise.Domain
+@inject CreateGuildHandler CreateGuildHandler
+@inject ListGuildsHandler ListGuildsHandler
+@inject CreatePlayerHandler CreatePlayerHandler
+@inject ListPlayersHandler ListPlayersHandler
+@inject CreateCharacterHandler CreateCharacterHandler
+@inject SetMainCharacterHandler SetMainCharacterHandler
+@inject CreateRaidTeamHandler CreateRaidTeamHandler
+@inject ListRaidTeamsForGuildHandler ListRaidTeamsForGuildHandler
+@inject AddPlayerToGuildHandler AddPlayerToGuildHandler
+@inject AddPlayerToRaidTeamHandler AddPlayerToRaidTeamHandler
 
-<h1>Hello, world!</h1>
+<PageTitle>Roster Setup</PageTitle>
 
-Welcome to your new app.
+<main class="setup-page">
+    <section class="setup-header">
+        <div>
+            <p class="eyebrow">Guildwise verification</p>
+            <h1>Manual roster setup</h1>
+        </div>
+        <button type="button" class="secondary-action" @onclick="SeedSampleRoster">Seed sample roster</button>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <div class="status-message @statusKind">@statusMessage</div>
+    }
+
+    <section class="workflow-grid">
+        <form class="setup-panel" @onsubmit="CreateGuild" @onsubmit:preventDefault="true">
+            <h2>Guild</h2>
+            <label>
+                Name
+                <input @bind="guildName" />
+            </label>
+            <label>
+                Region
+                <input @bind="guildRegion" />
+            </label>
+            <label>
+                Realm
+                <input @bind="guildRealm" />
+            </label>
+            <button type="submit">Create guild</button>
+        </form>
+
+        <form class="setup-panel" @onsubmit="CreatePlayer" @onsubmit:preventDefault="true">
+            <h2>Player</h2>
+            <label>
+                Display name
+                <input @bind="playerName" />
+            </label>
+            <button type="submit">Create player</button>
+        </form>
+
+        <form class="setup-panel" @onsubmit="CreateCharacter" @onsubmit:preventDefault="true">
+            <h2>Character</h2>
+            <label>
+                Player
+                <select @bind="selectedPlayerId">
+                    <option value="">Select player</option>
+                    @foreach (var player in players)
+                    {
+                        <option value="@player.Id">@player.DisplayName</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Name
+                <input @bind="characterName" />
+            </label>
+            <label>
+                Region
+                <input @bind="characterRegion" />
+            </label>
+            <label>
+                Realm
+                <input @bind="characterRealm" />
+            </label>
+            <label>
+                Class and specialization
+                <select @bind="selectedCharacterPresetName">
+                    @foreach (var preset in characterPresets)
+                    {
+                        <option value="@preset.Name">@preset.Name</option>
+                    }
+                </select>
+            </label>
+            <button type="submit">Create and set main</button>
+        </form>
+
+        <form class="setup-panel" @onsubmit="CreateRaidTeam" @onsubmit:preventDefault="true">
+            <h2>Raid team</h2>
+            <label>
+                Guild
+                <select @bind="selectedGuildId">
+                    <option value="">Select guild</option>
+                    @foreach (var guild in guilds)
+                    {
+                        <option value="@guild.Id">@guild.Name</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Name
+                <input @bind="raidTeamName" />
+            </label>
+            <button type="submit">Create raid team</button>
+        </form>
+
+        <form class="setup-panel" @onsubmit="AddPlayerToGuild" @onsubmit:preventDefault="true">
+            <h2>Guild member</h2>
+            <label>
+                Guild
+                <select @bind="selectedGuildId">
+                    <option value="">Select guild</option>
+                    @foreach (var guild in guilds)
+                    {
+                        <option value="@guild.Id">@guild.Name</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Player
+                <select @bind="selectedPlayerId">
+                    <option value="">Select player</option>
+                    @foreach (var player in players)
+                    {
+                        <option value="@player.Id">@player.DisplayName</option>
+                    }
+                </select>
+            </label>
+            <button type="submit">Add to guild</button>
+        </form>
+
+        <form class="setup-panel" @onsubmit="AddPlayerToRaidTeam" @onsubmit:preventDefault="true">
+            <h2>Roster</h2>
+            <label>
+                Raid team
+                <select @bind="selectedRaidTeamId">
+                    <option value="">Select raid team</option>
+                    @foreach (var raidTeam in raidTeams)
+                    {
+                        <option value="@raidTeam.Id">@raidTeam.Name</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Player
+                <select @bind="selectedPlayerId">
+                    <option value="">Select player</option>
+                    @foreach (var player in players)
+                    {
+                        <option value="@player.Id">@player.DisplayName</option>
+                    }
+                </select>
+            </label>
+            <button type="submit">Add to raid team</button>
+        </form>
+    </section>
+
+    <section class="roster-section">
+        <div class="section-heading">
+            <h2>Roster list</h2>
+            <button type="button" class="secondary-action" @onclick="RefreshData">Refresh</button>
+        </div>
+
+        @if (guilds.Count == 0)
+        {
+            <p class="empty-state">No guild has been created yet.</p>
+        }
+        else if (raidTeams.Count == 0)
+        {
+            <p class="empty-state">Create a raid team for the selected guild.</p>
+        }
+        else
+        {
+            <div class="roster-grid">
+                @foreach (var raidTeam in raidTeams)
+                {
+                    <article class="roster-team">
+                        <h3>@raidTeam.Name</h3>
+                        @if (raidTeam.Members.Count == 0)
+                        {
+                            <p class="empty-state">No players assigned.</p>
+                        }
+                        else
+                        {
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Main character</th>
+                                    <th>Role</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var member in raidTeam.Members)
+                                {
+                                    var player = players.FirstOrDefault(existing => existing.Id == member.PlayerId);
+                                    var mainCharacter = GetMainCharacter(player);
+
+                                    <tr>
+                                        <td>@(player?.DisplayName ?? "Unknown player")</td>
+                                        <td>@FormatCharacter(mainCharacter)</td>
+                                        <td>@(mainCharacter?.Role.ToString() ?? "-")</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</main>
+
+@code {
+    private readonly IReadOnlyList<CharacterPreset> characterPresets =
+    [
+        new("Retribution Paladin", CharacterClass.Paladin, CharacterSpecialization.PaladinRetribution, CharacterRole.Damage),
+        new("Protection Warrior", CharacterClass.Warrior, CharacterSpecialization.WarriorProtection, CharacterRole.Tank),
+        new("Restoration Shaman", CharacterClass.Shaman, CharacterSpecialization.ShamanRestoration, CharacterRole.Healer),
+        new("Frost Mage", CharacterClass.Mage, CharacterSpecialization.MageFrost, CharacterRole.Damage)
+    ];
+
+    private List<GuildDto> guilds = [];
+    private List<PlayerDto> players = [];
+    private List<RaidTeamDto> raidTeams = [];
+
+    private string guildName = "Guildwise";
+    private string guildRegion = "EU";
+    private string guildRealm = "Draenor";
+    private string playerName = "Myrmi";
+    private string characterName = "Alysa";
+    private string characterRegion = "EU";
+    private string characterRealm = "Draenor";
+    private string raidTeamName = "Team One";
+    private string selectedCharacterPresetName = "Retribution Paladin";
+    private string? selectedGuildId;
+    private string? selectedPlayerId;
+    private string? selectedRaidTeamId;
+    private string? statusMessage;
+    private string statusKind = "info";
+
+    protected override void OnInitialized()
+    {
+        RefreshData();
+    }
+
+    private void CreateGuild()
+    {
+        RunAction(() =>
+        {
+            var guild = CreateGuildHandler.Handle(new CreateGuildCommand(guildName, guildRegion, guildRealm));
+            selectedGuildId = guild.Id.ToString();
+            statusMessage = $"Created guild {guild.Name}.";
+        });
+    }
+
+    private void CreatePlayer()
+    {
+        RunAction(() =>
+        {
+            var player = CreatePlayerHandler.Handle(new CreatePlayerCommand(playerName));
+            selectedPlayerId = player.Id.ToString();
+            statusMessage = $"Created player {player.DisplayName}.";
+        });
+    }
+
+    private void CreateCharacter()
+    {
+        RunAction(() =>
+        {
+            var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
+            var preset = characterPresets.Single(existing => existing.Name == selectedCharacterPresetName);
+            var character = CreateCharacterHandler.Handle(new CreateCharacterCommand(
+                playerId,
+                characterName,
+                characterRegion,
+                characterRealm,
+                preset.CharacterClass,
+                preset.Specialization,
+                preset.Role));
+
+            SetMainCharacterHandler.Handle(new SetMainCharacterCommand(playerId, character.Id));
+            statusMessage = $"Created {character.Name} and set it as main.";
+        });
+    }
+
+    private void CreateRaidTeam()
+    {
+        RunAction(() =>
+        {
+            var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
+            var raidTeam = CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guildId, raidTeamName));
+            selectedRaidTeamId = raidTeam.Id.ToString();
+            statusMessage = $"Created raid team {raidTeam.Name}.";
+        });
+    }
+
+    private void AddPlayerToGuild()
+    {
+        RunAction(() =>
+        {
+            var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
+            var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
+
+            AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member));
+            statusMessage = "Added player to guild.";
+        });
+    }
+
+    private void AddPlayerToRaidTeam()
+    {
+        RunAction(() =>
+        {
+            var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
+            var raidTeamId = RequireGuid(selectedRaidTeamId, "Select a raid team first.");
+            var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
+
+            AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId));
+            statusMessage = "Added player to raid team.";
+        });
+    }
+
+    private void SeedSampleRoster()
+    {
+        RunAction(() =>
+        {
+            var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            var guild = CreateGuildHandler.Handle(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
+            var player = CreatePlayerHandler.Handle(new CreatePlayerCommand($"Myrmi {suffix}"));
+            var character = CreateCharacterHandler.Handle(new CreateCharacterCommand(
+                player.Id,
+                $"Alysa{suffix[^4..]}",
+                "EU",
+                "Draenor",
+                CharacterClass.Paladin,
+                CharacterSpecialization.PaladinRetribution,
+                CharacterRole.Damage));
+
+            SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
+            var raidTeam = CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guild.Id, "Team One"));
+            AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+
+            selectedGuildId = guild.Id.ToString();
+            selectedPlayerId = player.Id.ToString();
+            selectedRaidTeamId = raidTeam.Id.ToString();
+            statusMessage = "Seeded a complete roster flow.";
+        });
+    }
+
+    private void RunAction(Action action)
+    {
+        try
+        {
+            action();
+            statusKind = "success";
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
+        {
+            statusMessage = exception.Message;
+            statusKind = "error";
+        }
+
+        RefreshData();
+    }
+
+    private void RefreshData()
+    {
+        guilds = ListGuildsHandler.Handle(new ListGuildsQuery()).ToList();
+        players = ListPlayersHandler.Handle(new ListPlayersQuery()).ToList();
+
+        if (!Guid.TryParse(selectedGuildId, out var guildId) || guilds.All(guild => guild.Id != guildId))
+        {
+            selectedGuildId = guilds.Count == 0 ? null : guilds[0].Id.ToString();
+            guildId = guilds.Count == 0 ? Guid.Empty : guilds[0].Id;
+        }
+
+        raidTeams = guildId == Guid.Empty
+            ? []
+            : ListRaidTeamsForGuildHandler.Handle(new ListRaidTeamsForGuildQuery(guildId)).ToList();
+
+        if (!Guid.TryParse(selectedPlayerId, out _) && players.Count > 0)
+        {
+            selectedPlayerId = players[0].Id.ToString();
+        }
+
+        if (!Guid.TryParse(selectedRaidTeamId, out var raidTeamId) || raidTeams.All(raidTeam => raidTeam.Id != raidTeamId))
+        {
+            selectedRaidTeamId = raidTeams.Count == 0 ? null : raidTeams[0].Id.ToString();
+        }
+    }
+
+    private static Guid RequireGuid(string? value, string message)
+        => Guid.TryParse(value, out var id) ? id : throw new InvalidOperationException(message);
+
+    private static CharacterDto? GetMainCharacter(PlayerDto? player)
+        => player is null || !player.MainCharacterId.HasValue
+            ? null
+            : player.Characters.FirstOrDefault(character => character.Id == player.MainCharacterId);
+
+    private static string FormatCharacter(CharacterDto? character)
+        => character is null
+            ? "No main character"
+            : $"{character.Name} - {character.CharacterClass} {character.Specialization}";
+
+    private sealed record CharacterPreset(
+        string Name,
+        CharacterClass CharacterClass,
+        CharacterSpecialization Specialization,
+        CharacterRole Role);
+}
