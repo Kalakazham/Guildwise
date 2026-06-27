@@ -1,5 +1,57 @@
+# Build output
 bin/
 obj/
-/packages/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# .NET
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.nupkg
+packages/
+project.lock.json
+project.assets.json
+
+# Rider / ReSharper
+.idea/
+*.sln.iml
+*.DotSettings.user
+_ReSharper.Caches/
 riderModule.iml
-/_ReSharper.Caches/
+
+# Visual Studio
+.vs/
+
+# Test results / coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage.cobertura.xml
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment / secrets
+.env
+.env.*
+*.local.json
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Docker local overrides
+docker-compose.override.yml
