@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Guildwise.Application\Guildwise.Application.csproj" />
+      <ProjectReference Include="..\Guildwise.Infrastructure\Guildwise.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>
