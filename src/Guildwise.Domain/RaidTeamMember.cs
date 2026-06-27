@@ -8,7 +8,7 @@ public sealed class RaidTeamMember
 
     public Guid PlayerId { get; }
 
-    public RaidTeamMember(Guid raidTeamId, Guid playerId)
+    internal RaidTeamMember(Guid raidTeamId, Guid playerId)
     {
         if (raidTeamId == Guid.Empty)
         {

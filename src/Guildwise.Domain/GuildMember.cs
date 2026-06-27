@@ -14,7 +14,7 @@ public sealed class GuildMember
 
     public IReadOnlyCollection<AdditionalGuildRole> AdditionalRoles => _additionalRoles;
 
-    public GuildMember(Guid guildId, Guid playerId, GuildRank rank)
+    internal GuildMember(Guid guildId, Guid playerId, GuildRank rank)
     {
         if (guildId == Guid.Empty)
         {

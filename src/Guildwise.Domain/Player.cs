@@ -33,27 +33,39 @@ public sealed class Player
         CharacterSpecialization specialization,
         CharacterRole role)
     {
-        var character = Character.Create(name, region, realm, characterClass, specialization, role);
-        AddCharacter(character);
-        return character;
-    }
-
-    public void AddCharacter(Character character)
-    {
-        ArgumentNullException.ThrowIfNull(character);
-
-        if (character.PlayerId.HasValue && character.PlayerId.Value != Id)
-        {
-            throw new InvalidOperationException("Character already belongs to another player.");
-        }
-
-        if (_characters.Any(existing => Character.HasSameIdentity(character.Name, character.Region, character.Realm, existing)))
+        if (_characters.Any(existing => Character.HasSameIdentity(name, region, realm, existing)))
         {
             throw new InvalidOperationException("Duplicate character for this player.");
         }
 
-        character.AssignToPlayer(Id);
+        var character = Character.Create(Id, name, region, realm, characterClass, specialization, role);
         _characters.Add(character);
+        return character;
+    }
+
+    public void UpdateCharacter(
+        Guid characterId,
+        string name,
+        string region,
+        string realm,
+        CharacterClass characterClass,
+        CharacterSpecialization specialization,
+        CharacterRole role)
+    {
+        var character = _characters.FirstOrDefault(existing => existing.Id == characterId);
+        if (character is null)
+        {
+            throw new InvalidOperationException("Character must belong to this player.");
+        }
+
+        if (_characters
+            .Where(existing => existing.Id != characterId)
+            .Any(existing => Character.HasSameIdentity(name, region, realm, existing)))
+        {
+            throw new InvalidOperationException("Duplicate character for this player.");
+        }
+
+        character.Update(name, region, realm, characterClass, specialization, role);
     }
 
     public void SetMainCharacter(Character character)
@@ -82,7 +94,5 @@ public sealed class Player
         {
             MainCharacterId = null;
         }
-
-        character.ClearPlayer();
     }
 }

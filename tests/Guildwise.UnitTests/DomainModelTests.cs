@@ -1,3 +1,4 @@
+using System.Reflection;
 using Guildwise.Domain;
 
 namespace Guildwise.UnitTests;
@@ -42,42 +43,84 @@ public sealed class DomainModelTests
     }
 
     [Fact]
-    public void Character_Create_Valid_Character()
+    public void Player_AddCharacter_Creates_Character_Belonging_To_Player()
     {
-        var character = Character.Create(
+        var player = Player.Create("Myrmi");
+
+        var character = player.AddCharacter(
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
+            CharacterSpecialization.PaladinRetribution,
             CharacterRole.Damage);
 
         Assert.Equal("Alysa", character.Name);
         Assert.Equal("EU", character.Region);
         Assert.Equal("Draenor", character.Realm);
         Assert.Equal(CharacterClass.Paladin, character.CharacterClass);
-        Assert.Equal(CharacterSpecialization.Retribution, character.Specialization);
+        Assert.Equal(CharacterSpecialization.PaladinRetribution, character.Specialization);
         Assert.Equal(CharacterRole.Damage, character.Role);
-        Assert.Null(character.PlayerId);
+        Assert.Equal(player.Id, character.PlayerId);
+        Assert.Contains(character, player.Characters);
+    }
+
+    [Theory]
+    [InlineData(CharacterClass.Mage, CharacterSpecialization.MageFrost)]
+    [InlineData(CharacterClass.DeathKnight, CharacterSpecialization.DeathKnightFrost)]
+    [InlineData(CharacterClass.Paladin, CharacterSpecialization.PaladinRetribution)]
+    public void Player_AddCharacter_Accepts_Matching_Class_And_Specialization(
+        CharacterClass characterClass,
+        CharacterSpecialization specialization)
+    {
+        var player = Player.Create("Myrmi");
+
+        var character = player.AddCharacter(
+            "Alysa",
+            "EU",
+            "Draenor",
+            characterClass,
+            specialization,
+            CharacterRole.Damage);
+
+        Assert.Equal(characterClass, character.CharacterClass);
+        Assert.Equal(specialization, character.Specialization);
     }
 
     [Fact]
-    public void Player_AddCharacter_Assigns_Character_To_Player()
+    public void Player_AddCharacter_Rejects_Mismatched_Class_And_Specialization()
     {
         var player = Player.Create("Myrmi");
-        var character = Character.Create(
+
+        Assert.Throws<InvalidOperationException>(() => player.AddCharacter(
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
-            CharacterRole.Damage);
+            CharacterSpecialization.MageFrost,
+            CharacterRole.Damage));
+    }
 
-        player.AddCharacter(character);
+    [Fact]
+    public void Character_Has_No_Public_Creation_Api()
+    {
+        var publicConstructors = typeof(Character).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+        var publicCreateMethods = typeof(Character)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == "Create");
 
-        Assert.Single(player.Characters);
-        Assert.Equal(player.Id, character.PlayerId);
-        Assert.Contains(character, player.Characters);
+        Assert.Empty(publicConstructors);
+        Assert.Empty(publicCreateMethods);
+    }
+
+    [Fact]
+    public void Character_Has_No_Public_Update_Api()
+    {
+        var publicUpdateMethods = typeof(Character)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(method => method.Name == "Update");
+
+        Assert.Empty(publicUpdateMethods);
     }
 
     [Fact]
@@ -90,31 +133,124 @@ public sealed class DomainModelTests
             "EU",
             "Draenor",
             CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
+            CharacterSpecialization.PaladinRetribution,
             CharacterRole.Damage);
 
-        var duplicate = Character.Create(
+        Assert.Throws<InvalidOperationException>(() => player.AddCharacter(
             "Alysa",
             "eu",
             "draenor",
             CharacterClass.Paladin,
-            CharacterSpecialization.Protection,
-            CharacterRole.Tank);
+            CharacterSpecialization.PaladinProtection,
+            CharacterRole.Tank));
+    }
 
-        Assert.Throws<InvalidOperationException>(() => player.AddCharacter(duplicate));
+    [Fact]
+    public void Player_AddCharacter_Rejects_Unknown_And_Undefined_Enum_Values()
+    {
+        var player = Player.Create("Myrmi");
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => player.AddCharacter(
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Unknown,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => player.AddCharacter(
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            (CharacterSpecialization)999,
+            CharacterRole.Damage));
+    }
+
+    [Fact]
+    public void Player_UpdateCharacter_Updates_Character_Through_Player()
+    {
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
+
+        player.UpdateCharacter(
+            character.Id,
+            "Belysa",
+            "EU",
+            "Silvermoon",
+            CharacterClass.Priest,
+            CharacterSpecialization.PriestHoly,
+            CharacterRole.Healer);
+
+        Assert.Equal("Belysa", character.Name);
+        Assert.Equal("Silvermoon", character.Realm);
+        Assert.Equal(CharacterClass.Priest, character.CharacterClass);
+        Assert.Equal(CharacterSpecialization.PriestHoly, character.Specialization);
+        Assert.Equal(CharacterRole.Healer, character.Role);
+    }
+
+    [Fact]
+    public void Player_UpdateCharacter_Rejects_Mismatched_Class_And_Specialization()
+    {
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
+
+        Assert.Throws<InvalidOperationException>(() => player.UpdateCharacter(
+            character.Id,
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.MageFrost,
+            CharacterRole.Damage));
+    }
+
+    [Fact]
+    public void Player_UpdateCharacter_Rejects_Duplicate_Character_Identity()
+    {
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
+
+        player.AddCharacter(
+            "Belysa",
+            "EU",
+            "Silvermoon",
+            CharacterClass.Priest,
+            CharacterSpecialization.PriestHoly,
+            CharacterRole.Healer);
+
+        Assert.Throws<InvalidOperationException>(() => player.UpdateCharacter(
+            character.Id,
+            "Belysa",
+            "eu",
+            "silvermoon",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinProtection,
+            CharacterRole.Tank));
+    }
+
+    [Fact]
+    public void Player_UpdateCharacter_Rejects_Foreign_Character()
+    {
+        var player = Player.Create("Myrmi");
+        var foreignPlayer = Player.Create("Other");
+        var foreignCharacter = CreateMainReadyCharacter(foreignPlayer);
+
+        Assert.Throws<InvalidOperationException>(() => player.UpdateCharacter(
+            foreignCharacter.Id,
+            "Belysa",
+            "EU",
+            "Silvermoon",
+            CharacterClass.Priest,
+            CharacterSpecialization.PriestHoly,
+            CharacterRole.Healer));
     }
 
     [Fact]
     public void Player_SetMainCharacter_Sets_Main_Character()
     {
         var player = Player.Create("Myrmi");
-        var character = player.AddCharacter(
-            "Alysa",
-            "EU",
-            "Draenor",
-            CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
-            CharacterRole.Damage);
+        var character = CreateMainReadyCharacter(player);
 
         player.SetMainCharacter(character);
 
@@ -126,121 +262,230 @@ public sealed class DomainModelTests
     {
         var player = Player.Create("Myrmi");
         var foreignPlayer = Player.Create("Other");
-        var foreignCharacter = foreignPlayer.AddCharacter(
-            "Alysa",
-            "EU",
-            "Draenor",
-            CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
-            CharacterRole.Damage);
+        var foreignCharacter = CreateMainReadyCharacter(foreignPlayer);
 
         Assert.Throws<InvalidOperationException>(() => player.SetMainCharacter(foreignCharacter));
     }
 
     [Fact]
-    public void Player_RemoveCharacter_Clears_Main_Character()
+    public void Player_RemoveCharacter_Clears_Main_Character_Without_Orphaning_Character()
     {
         var player = Player.Create("Myrmi");
-        var character = player.AddCharacter(
-            "Alysa",
-            "EU",
-            "Draenor",
-            CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
-            CharacterRole.Damage);
+        var character = CreateMainReadyCharacter(player);
         player.SetMainCharacter(character);
 
         player.RemoveCharacter(character.Id);
 
         Assert.Empty(player.Characters);
         Assert.Null(player.MainCharacterId);
-        Assert.Null(character.PlayerId);
+        Assert.Equal(player.Id, character.PlayerId);
     }
 
     [Fact]
-    public void RaidTeam_Create_Valid_RaidTeam()
+    public void Guild_CreateRaidTeam_Creates_RaidTeam_Belonging_To_Guild()
     {
-        var raidTeam = RaidTeam.Create("Team One");
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+
+        var raidTeam = guild.CreateRaidTeam("Team One");
 
         Assert.Equal("Team One", raidTeam.Name);
-        Assert.Equal(Guid.Empty, raidTeam.GuildId);
-        Assert.Empty(raidTeam.Members);
-    }
-
-    [Fact]
-    public void Guild_AddRaidTeam_Adds_Team_To_Guild()
-    {
-        var guild = Guild.Create("Guildwise", "EU", "Draenor");
-        var raidTeam = RaidTeam.Create("Team One");
-
-        guild.AddRaidTeam(raidTeam);
-
-        Assert.Single(guild.RaidTeams);
         Assert.Equal(guild.Id, raidTeam.GuildId);
+        Assert.Single(guild.RaidTeams);
+        Assert.Contains(raidTeam, guild.RaidTeams);
     }
 
     [Fact]
-    public void Guild_AddRaidTeam_Rejects_Duplicate_Names_Within_Guild()
+    public void RaidTeam_Has_No_Public_Creation_Api()
+    {
+        var publicConstructors = typeof(RaidTeam).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+        var publicCreateMethods = typeof(RaidTeam)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == "Create");
+
+        Assert.Empty(publicConstructors);
+        Assert.Empty(publicCreateMethods);
+    }
+
+    [Fact]
+    public void RaidTeam_Has_No_Public_Rename_Or_RemovePlayer_Api()
+    {
+        var publicBypassMethods = typeof(RaidTeam)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(method => method.Name is "Rename" or "RemovePlayer");
+
+        Assert.Empty(publicBypassMethods);
+    }
+
+    [Fact]
+    public void RaidTeamMember_Has_No_Public_Creation_Api()
+    {
+        var publicConstructors = typeof(RaidTeamMember).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Empty(publicConstructors);
+    }
+
+    [Fact]
+    public void Guild_CreateRaidTeam_Rejects_Duplicate_Names_Within_Guild()
     {
         var guild = Guild.Create("Guildwise", "EU", "Draenor");
 
-        guild.AddRaidTeam(RaidTeam.Create("Team One"));
+        guild.CreateRaidTeam("Team One");
 
-        Assert.Throws<InvalidOperationException>(() => guild.AddRaidTeam(RaidTeam.Create("team one")));
+        Assert.Throws<InvalidOperationException>(() => guild.CreateRaidTeam("team one"));
     }
 
     [Fact]
-    public void RaidTeam_AddPlayer_Rejects_Player_Without_Main_Character()
+    public void Guild_RenameRaidTeam_Renames_Team_Through_Guild()
     {
-        var raidTeam = RaidTeam.Create("Team One");
-        var player = Player.Create("Myrmi");
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
 
-        Assert.Throws<InvalidOperationException>(() => raidTeam.AddPlayer(player));
+        guild.RenameRaidTeam(raidTeam, "Mythic Team");
+
+        Assert.Equal("Mythic Team", raidTeam.Name);
     }
 
     [Fact]
-    public void RaidTeam_AddPlayer_Adds_Player_With_Main_Character()
+    public void Guild_RenameRaidTeam_Rejects_Duplicate_Names_Within_Guild()
     {
-        var raidTeam = RaidTeam.Create("Team One");
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
+        guild.CreateRaidTeam("Team Two");
+
+        Assert.Throws<InvalidOperationException>(() => guild.RenameRaidTeam(raidTeam, "team two"));
+    }
+
+    [Fact]
+    public void Guild_RenameRaidTeam_Rejects_RaidTeam_From_Another_Guild()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var otherGuild = Guild.Create("Other", "EU", "Draenor");
+        var otherRaidTeam = otherGuild.CreateRaidTeam("Team One");
+
+        Assert.Throws<InvalidOperationException>(() => guild.RenameRaidTeam(otherRaidTeam, "Team Two"));
+    }
+
+    [Fact]
+    public void Guild_AddPlayerToRaidTeam_Rejects_Player_Without_Main_Character()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
         var player = Player.Create("Myrmi");
-        var character = player.AddCharacter(
-            "Alysa",
-            "EU",
-            "Draenor",
-            CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
-            CharacterRole.Damage);
+        guild.AddMember(player, GuildRank.Member);
+
+        Assert.Throws<InvalidOperationException>(() => guild.AddPlayerToRaidTeam(raidTeam, player));
+    }
+
+    [Fact]
+    public void Guild_AddPlayerToRaidTeam_Rejects_Player_Who_Is_Not_GuildMember()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
         player.SetMainCharacter(character);
 
-        raidTeam.AddPlayer(player);
+        Assert.Throws<InvalidOperationException>(() => guild.AddPlayerToRaidTeam(raidTeam, player));
+    }
+
+    [Fact]
+    public void Guild_AddPlayerToRaidTeam_Rejects_RaidTeam_From_Another_Guild()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var otherGuild = Guild.Create("Other", "EU", "Draenor");
+        var otherRaidTeam = otherGuild.CreateRaidTeam("Team One");
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
+        player.SetMainCharacter(character);
+        guild.AddMember(player, GuildRank.Member);
+
+        Assert.Throws<InvalidOperationException>(() => guild.AddPlayerToRaidTeam(otherRaidTeam, player));
+    }
+
+    [Fact]
+    public void Guild_AddPlayerToRaidTeam_Adds_GuildMember_With_Main_Character()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
+        player.SetMainCharacter(character);
+        guild.AddMember(player, GuildRank.Member);
+
+        guild.AddPlayerToRaidTeam(raidTeam, player);
 
         Assert.Single(raidTeam.Members);
         Assert.Equal(player.Id, raidTeam.Members.Single().PlayerId);
     }
 
     [Fact]
-    public void RaidTeam_AddPlayer_Rejects_Duplicate_Players()
+    public void Guild_AddPlayerToRaidTeam_Rejects_Duplicate_Players()
     {
-        var raidTeam = RaidTeam.Create("Team One");
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
         var player = Player.Create("Myrmi");
-        var character = player.AddCharacter(
-            "Alysa",
-            "EU",
-            "Draenor",
-            CharacterClass.Paladin,
-            CharacterSpecialization.Retribution,
-            CharacterRole.Damage);
+        var character = CreateMainReadyCharacter(player);
         player.SetMainCharacter(character);
+        guild.AddMember(player, GuildRank.Member);
 
-        raidTeam.AddPlayer(player);
+        guild.AddPlayerToRaidTeam(raidTeam, player);
 
-        Assert.Throws<InvalidOperationException>(() => raidTeam.AddPlayer(player));
+        Assert.Throws<InvalidOperationException>(() => guild.AddPlayerToRaidTeam(raidTeam, player));
+    }
+
+    [Fact]
+    public void Guild_RemovePlayerFromRaidTeam_Removes_Player_Through_Guild()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam("Team One");
+        var player = CreateRosterReadyMember(guild);
+        guild.AddPlayerToRaidTeam(raidTeam, player);
+
+        guild.RemovePlayerFromRaidTeam(raidTeam, player.Id);
+
+        Assert.Empty(raidTeam.Members);
+    }
+
+    [Fact]
+    public void Guild_RemovePlayerFromRaidTeam_Rejects_RaidTeam_From_Another_Guild()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var otherGuild = Guild.Create("Other", "EU", "Draenor");
+        var otherRaidTeam = otherGuild.CreateRaidTeam("Team One");
+        var player = CreateRosterReadyMember(guild);
+
+        Assert.Throws<InvalidOperationException>(() => guild.RemovePlayerFromRaidTeam(otherRaidTeam, player.Id));
+    }
+
+    [Fact]
+    public void Guild_RemoveMember_Removes_Player_From_All_Guild_RaidTeams()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var firstRaidTeam = guild.CreateRaidTeam("Team One");
+        var secondRaidTeam = guild.CreateRaidTeam("Team Two");
+        var player = CreateRosterReadyMember(guild);
+        guild.AddPlayerToRaidTeam(firstRaidTeam, player);
+        guild.AddPlayerToRaidTeam(secondRaidTeam, player);
+
+        guild.RemoveMember(player.Id);
+
+        Assert.Empty(guild.Members);
+        Assert.Empty(firstRaidTeam.Members);
+        Assert.Empty(secondRaidTeam.Members);
+    }
+
+    [Fact]
+    public void GuildMember_Has_No_Public_Creation_Api()
+    {
+        var publicConstructors = typeof(GuildMember).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Empty(publicConstructors);
     }
 
     [Fact]
     public void GuildMember_AddAdditionalRole_Adds_And_Removes_Roles()
     {
-        var member = new GuildMember(Guid.NewGuid(), Guid.NewGuid(), GuildRank.Officer);
+        var member = CreateGuildMember();
 
         member.AddAdditionalRole(AdditionalGuildRole.RaidLead);
         member.AddAdditionalRole(AdditionalGuildRole.Recruiter);
@@ -254,10 +499,43 @@ public sealed class DomainModelTests
     [Fact]
     public void GuildMember_AddAdditionalRole_Rejects_Duplicate_Roles()
     {
-        var member = new GuildMember(Guid.NewGuid(), Guid.NewGuid(), GuildRank.Officer);
+        var member = CreateGuildMember();
 
         member.AddAdditionalRole(AdditionalGuildRole.RaidLead);
 
         Assert.Throws<InvalidOperationException>(() => member.AddAdditionalRole(AdditionalGuildRole.RaidLead));
+    }
+
+    [Fact]
+    public void GuildMember_AddAdditionalRole_Rejects_Undefined_Roles()
+    {
+        var member = CreateGuildMember();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => member.AddAdditionalRole((AdditionalGuildRole)999));
+    }
+
+    private static Character CreateMainReadyCharacter(Player player)
+        => player.AddCharacter(
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage);
+
+    private static Player CreateRosterReadyMember(Guild guild)
+    {
+        var player = Player.Create("Myrmi");
+        var character = CreateMainReadyCharacter(player);
+        player.SetMainCharacter(character);
+        guild.AddMember(player, GuildRank.Member);
+        return player;
+    }
+
+    private static GuildMember CreateGuildMember()
+    {
+        var guild = Guild.Create("Guildwise", "EU", "Draenor");
+        var player = Player.Create("Myrmi");
+        return guild.AddMember(player, GuildRank.Officer);
     }
 }

@@ -15,7 +15,7 @@ internal static class DomainGuard
     public static void RequiredEnum<TEnum>(TEnum value, string parameterName)
         where TEnum : struct, Enum
     {
-        if (EqualityComparer<TEnum>.Default.Equals(value, default))
+        if (EqualityComparer<TEnum>.Default.Equals(value, default) || !Enum.IsDefined(typeof(TEnum), value))
         {
             throw new ArgumentOutOfRangeException(parameterName, $"{parameterName} is required.");
         }
