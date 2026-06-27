@@ -80,6 +80,19 @@ Do not implement these unless a feature file explicitly says so:
 - External API DTOs must not leak into Domain.
 - EF Core attributes must not be placed on Domain entities.
 
+## Persistence Rules
+
+Guildwise uses PostgreSQL with EF Core for persistent storage.
+
+- EF Core belongs only in `Guildwise.Infrastructure`.
+- Do not add EF Core references to Domain or Application.
+- Do not add EF Core attributes to Domain entities.
+- Use Fluent API mappings in Infrastructure.
+- Repository interfaces stay in Application.
+- Repository implementations live in Infrastructure.
+- Migrations belong to Infrastructure and must be committed to Git.
+- Do not rewrite committed migrations unless explicitly instructed.
+
 ## Testing Rules
 
 - Add or update tests for meaningful domain or application behavior.
