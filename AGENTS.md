@@ -92,6 +92,39 @@ Do not implement these unless a feature file explicitly says so:
 dotnet build
 dotnet test
 ```
+
+## Changelog Rules
+
+Guildwise uses `CHANGELOG.md` to track notable changes.
+
+For every feature, fix, architectural change, tooling change or meaningful refactor, update the `[Unreleased]` section of `CHANGELOG.md`.
+
+Use these sections:
+
+* `Added` for new features, new capabilities, new tests or new infrastructure.
+* `Changed` for refactors or behavior changes.
+* `Fixed` for bug fixes.
+* `Removed` for removed functionality.
+
+Do not add trivial implementation details to the changelog.
+
+Good changelog entries:
+
+* Added manual guild roster domain model.
+* Added application use case handlers for manual guild roster setup.
+* Added temporary in-memory storage for guild and player aggregate roots.
+* Added minimal Blazor verification UI for manual guild roster setup.
+* Refactored the Application layer into explicit use case handlers.
+
+Bad changelog entries:
+
+* Renamed a local variable.
+* Reformatted a file.
+* Added an empty class.
+* Changed whitespace.
+
+AI agents must update `CHANGELOG.md` as part of the same change when implementing a feature slice.
+
 ## Coding Style
 
 - Prefer clear domain language over generic technical names.
