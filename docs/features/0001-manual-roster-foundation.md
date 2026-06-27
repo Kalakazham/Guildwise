@@ -672,3 +672,16 @@ This feature is done when:
 * Architecture tests pass.
 * `CHANGELOG.md` has an entry under `[Unreleased]`.
 * No external API integration has been introduced.
+
+## Implementation Notes
+
+Feature 0001 was implemented in four slices:
+
+- `0001a`: Domain model and unit tests.
+- `0001b`: Application use case handlers.
+- `0001c`: Temporary in-memory infrastructure.
+- `0001d`: Minimal Blazor verification UI.
+
+The feature intentionally uses temporary in-memory storage. Production persistence is out of scope and will be handled by a later feature.
+
+The minimal UI is a verification view, not the final roster dashboard.

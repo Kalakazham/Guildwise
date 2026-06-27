@@ -136,6 +136,15 @@ Guildwise.ArchitectureTests
 
 The first feature is manual roster management.
 
+It includes:
+
+- Domain model for guilds, players, characters, guild members and raid teams.
+- Application use case handlers.
+- Temporary in-memory infrastructure.
+- A minimal Blazor verification UI.
+
+This is not the final production roster dashboard.
+
 Flow:
 
 User creates a guild.
