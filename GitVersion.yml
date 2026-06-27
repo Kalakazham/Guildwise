@@ -1,0 +1,17 @@
+workflow: GitFlow/v1
+tag-prefix: '[vV]'
+
+branches:
+    main:
+        regex: ^main$
+        label: ''
+    
+    develop:
+        regex: ^dev$
+        label: dev
+        increment: Minor
+    
+    feature:
+        regex: ^features?[/-](?<BranchName>.+)
+        label: '{BranchName}'
+        increment: Inherit
