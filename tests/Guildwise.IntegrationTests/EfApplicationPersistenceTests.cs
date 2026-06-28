@@ -1,7 +1,9 @@
+using Guildwise.Application.Abstractions.Persistence;
 using Guildwise.Application.Characters.CreateCharacter;
 using Guildwise.Application.Characters.SetMainCharacter;
 using Guildwise.Application.Common.Results;
 using Guildwise.Application.GuildMembers.AddPlayerToGuild;
+using Guildwise.Application.Players.DeletePlayer;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
 using Guildwise.Domain;
@@ -133,6 +135,48 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         Assert.Equal(player.Id, raidTeamMember.PlayerId);
     }
 
+    [Fact]
+    public async Task DeletePlayer_Rolls_Back_Guild_Changes_When_Player_Removal_Throws()
+    {
+        var player = await AddPlayerWithMainCharacterAsync();
+        var guild = await AddGuildWithMemberAndRaidTeamMemberAsync(player);
+
+        using (var arrangeAssertContext = _fixture.CreateDbContext())
+        {
+            var arrangedGuild = await new EfGuildRepository(arrangeAssertContext).GetByIdAsync(guild.Id);
+            Assert.NotNull(arrangedGuild);
+            Assert.Equal(player.Id, Assert.Single(arrangedGuild.Members).PlayerId);
+            Assert.Equal(player.Id, Assert.Single(Assert.Single(arrangedGuild.RaidTeams).Members).PlayerId);
+        }
+
+        using (var actContext = _fixture.CreateDbContext())
+        {
+            var playerRepository = new EfPlayerRepository(actContext);
+            var throwingPlayerRepository = new ThrowingRemovePlayerRepository(
+                playerRepository,
+                () => actContext.Database.CurrentTransaction is not null);
+            var handler = new DeletePlayerHandler(
+                new EfGuildRepository(actContext),
+                throwingPlayerRepository,
+                new EfTransactionRunner(actContext));
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => handler.HandleAsync(new DeletePlayerCommand(player.Id)));
+
+            Assert.Equal("Forced player removal failure.", exception.Message);
+            Assert.True(throwingPlayerRepository.SawActiveTransaction);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var loadedPlayer = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
+        var loadedGuild = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
+
+        Assert.NotNull(loadedPlayer);
+        Assert.NotNull(loadedGuild);
+        Assert.Equal(player.Id, Assert.Single(loadedGuild.Members).PlayerId);
+        Assert.Equal(player.Id, Assert.Single(Assert.Single(loadedGuild.RaidTeams).Members).PlayerId);
+    }
+
     private async Task<Player> AddPlayerAsync()
     {
         var player = Player.Create(UniqueName("Player"));
@@ -200,6 +244,19 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         return guild;
     }
 
+    private async Task<Guild> AddGuildWithMemberAndRaidTeamMemberAsync(Player player)
+    {
+        var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
+        guild.AddMember(player, GuildRank.Member);
+        var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
+        guild.AddPlayerToRaidTeam(raidTeam, player);
+
+        using var context = _fixture.CreateDbContext();
+        await new EfGuildRepository(context).AddAsync(guild);
+
+        return guild;
+    }
+
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
 
@@ -208,5 +265,38 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Null(result.Failure);
+    }
+
+    private sealed class ThrowingRemovePlayerRepository : IPlayerRepository
+    {
+        private readonly IPlayerRepository _inner;
+
+        private readonly Func<bool> _hasActiveTransaction;
+
+        public ThrowingRemovePlayerRepository(IPlayerRepository inner, Func<bool> hasActiveTransaction)
+        {
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            _hasActiveTransaction = hasActiveTransaction ?? throw new ArgumentNullException(nameof(hasActiveTransaction));
+        }
+
+        public bool SawActiveTransaction { get; private set; }
+
+        public Task<Player?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => _inner.GetByIdAsync(id, cancellationToken);
+
+        public Task<IReadOnlyCollection<Player>> ListAsync(CancellationToken cancellationToken = default)
+            => _inner.ListAsync(cancellationToken);
+
+        public Task AddAsync(Player player, CancellationToken cancellationToken = default)
+            => _inner.AddAsync(player, cancellationToken);
+
+        public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            SawActiveTransaction = _hasActiveTransaction();
+            throw new InvalidOperationException("Forced player removal failure.");
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+            => _inner.SaveChangesAsync(cancellationToken);
     }
 }
