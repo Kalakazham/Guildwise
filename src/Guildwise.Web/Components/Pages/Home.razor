@@ -4,6 +4,7 @@
 
 @using Guildwise.Application.Characters.CreateCharacter
 @using Guildwise.Application.Characters.SetMainCharacter
+@using Guildwise.Application.Common.Results
 @using Guildwise.Application.Contracts.Characters
 @using Guildwise.Application.Contracts.Guilds
 @using Guildwise.Application.Contracts.Players
@@ -293,16 +294,16 @@
         {
             var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
             var preset = characterPresets.Single(existing => existing.Name == selectedCharacterPresetName);
-            var character = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            var character = Unwrap(await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 playerId,
                 characterName,
                 characterRegion,
                 characterRealm,
                 preset.CharacterClass,
                 preset.Specialization,
-                preset.Role));
+                preset.Role)));
 
-            await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(playerId, character.Id));
+            EnsureSuccess(await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(playerId, character.Id)));
             statusMessage = $"Created {character.Name} and set it as main.";
         });
     }
@@ -325,7 +326,7 @@
             var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
             var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
 
-            await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member));
+            EnsureSuccess(await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member)));
             statusMessage = "Added player to guild.";
         });
     }
@@ -338,7 +339,7 @@
             var raidTeamId = RequireGuid(selectedRaidTeamId, "Select a raid team first.");
             var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
 
-            await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId));
+            EnsureSuccess(await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId)));
             statusMessage = "Added player to raid team.";
         });
     }
@@ -350,19 +351,19 @@
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
             var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
             var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand($"Myrmi {suffix}"));
-            var character = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            var character = Unwrap(await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 $"Alysa{suffix[^4..]}",
                 "EU",
                 "Draenor",
                 CharacterClass.Paladin,
                 CharacterSpecialization.PaladinRetribution,
-                CharacterRole.Damage));
+                CharacterRole.Damage)));
 
-            await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+            EnsureSuccess(await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
             var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
-            await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
-            await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+            EnsureSuccess(await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
+            EnsureSuccess(await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
 
             selectedGuildId = guild.Id.ToString();
             selectedPlayerId = player.Id.ToString();
@@ -415,6 +416,27 @@
 
     private static Guid RequireGuid(string? value, string message)
         => Guid.TryParse(value, out var id) ? id : throw new InvalidOperationException(message);
+
+    private static T Unwrap<T>(Result<T> result)
+        => result.IsSuccess && result.Value is not null
+            ? result.Value
+            : throw new InvalidOperationException(result.Failure?.Message ?? "Application command failed.");
+
+    private static void EnsureSuccess(Result result)
+    {
+        if (result.IsFailure)
+        {
+            throw new InvalidOperationException(result.Failure?.Message ?? "Application command failed.");
+        }
+    }
+
+    private static void EnsureSuccess<T>(Result<T> result)
+    {
+        if (result.IsFailure)
+        {
+            throw new InvalidOperationException(result.Failure?.Message ?? "Application command failed.");
+        }
+    }
 
     private static CharacterDto? GetMainCharacter(PlayerDto? player)
         => player is null || !player.MainCharacterId.HasValue

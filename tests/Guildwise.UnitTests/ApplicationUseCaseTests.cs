@@ -7,6 +7,7 @@ using Guildwise.Application.Characters.ListCharactersForPlayer;
 using Guildwise.Application.Characters.SetMainCharacter;
 using Guildwise.Application.Characters.UpdateCharacter;
 using Guildwise.Application.Common;
+using Guildwise.Application.Common.Results;
 using Guildwise.Application.Contracts.Characters;
 using Guildwise.Application.Contracts.GuildMembers;
 using Guildwise.Application.Contracts.Guilds;
@@ -62,18 +63,20 @@ public sealed class ApplicationUseCaseTests
     }
 
     [Fact]
-    public async Task CreateCharacterForUnknownPlayer_Throws_NotFoundException()
+    public async Task CreateCharacterForUnknownPlayer_Returns_NotFound()
     {
         var context = new TestContext();
 
-        await Assert.ThrowsAsync<NotFoundException>(() => context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var result = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             Guid.NewGuid(),
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Mage,
             CharacterSpecialization.MageFrost,
-            CharacterRole.Damage)));
+            CharacterRole.Damage));
+
+        AssertFailure(result, FailureType.NotFound, "Player");
     }
 
     [Fact]
@@ -92,42 +95,44 @@ public sealed class ApplicationUseCaseTests
         var context = new TestContext();
         var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
-        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
-            CharacterRole.Damage));
-        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+            CharacterRole.Damage)));
+        AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
         var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
+        var result = await context.AddPlayerToRaidTeamHandler.HandleAsync(
+            new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
 
-        Assert.Contains("guild member", exception.Message, StringComparison.OrdinalIgnoreCase);
+        AssertFailure(result, FailureType.BusinessRule, "guild member");
     }
 
     [Fact]
-    public async Task AddPlayerToUnknownRaidTeam_Throws_NotFoundException()
+    public async Task AddPlayerToUnknownRaidTeam_Returns_NotFound()
     {
         var context = new TestContext();
         var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
-        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
-            CharacterRole.Damage));
-        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
-        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            CharacterRole.Damage)));
+        AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
 
-        await Assert.ThrowsAsync<NotFoundException>(() => context.AddPlayerToRaidTeamHandler.HandleAsync(
-            new AddPlayerToRaidTeamCommand(guild.Id, Guid.NewGuid(), player.Id)));
+        var result = await context.AddPlayerToRaidTeamHandler.HandleAsync(
+            new AddPlayerToRaidTeamCommand(guild.Id, Guid.NewGuid(), player.Id));
+
+        AssertFailure(result, FailureType.NotFound, "RaidTeam");
     }
 
     [Fact]
@@ -148,14 +153,14 @@ public sealed class ApplicationUseCaseTests
         var context = new TestContext();
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
 
-        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Mage,
             CharacterSpecialization.MageFrost,
-            CharacterRole.Damage));
+            CharacterRole.Damage)));
 
         var updated = await context.UpdateCharacterHandler.HandleAsync(new UpdateCharacterCommand(
             player.Id,
@@ -167,7 +172,7 @@ public sealed class ApplicationUseCaseTests
             CharacterSpecialization.MageFire,
             CharacterRole.Damage));
 
-        var mainCharacter = await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, updated.Id));
+        var mainCharacter = AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, updated.Id)));
 
         Assert.Equal(CharacterSpecialization.MageFire, updated.Specialization);
         Assert.Equal(updated.Id, mainCharacter.MainCharacterId);
@@ -180,20 +185,20 @@ public sealed class ApplicationUseCaseTests
         var context = new TestContext();
         var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
-        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
-            CharacterRole.Damage));
+            CharacterRole.Damage)));
 
-        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
-        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+        AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
 
         var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
-        var roster = await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+        var roster = AssertSuccess(await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
 
         Assert.Single(roster.Members);
         Assert.Equal(player.Id, roster.Members.Single().PlayerId);
@@ -221,7 +226,7 @@ public sealed class ApplicationUseCaseTests
         var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
 
-        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Officer));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Officer)));
         var added = await context.AddAdditionalRoleHandler.HandleAsync(new AddAdditionalRoleToGuildMemberCommand(
             guild.Id,
             player.Id,
@@ -241,20 +246,20 @@ public sealed class ApplicationUseCaseTests
         var context = new TestContext();
         var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
-        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
-            CharacterRole.Damage));
-        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
-        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            CharacterRole.Damage)));
+        AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
         var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
-        await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+        AssertSuccess(await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
 
-        await context.DeletePlayerHandler.HandleAsync(new DeletePlayerCommand(player.Id));
+        AssertSuccess(await context.DeletePlayerHandler.HandleAsync(new DeletePlayerCommand(player.Id)));
 
         Assert.Null(await context.GetPlayerHandler.HandleAsync(new GetPlayerQuery(player.Id)));
         Assert.Empty((await context.GetGuildHandler.HandleAsync(new GetGuildQuery(guild.Id)))!.Members);
@@ -279,17 +284,241 @@ public sealed class ApplicationUseCaseTests
         var context = new TestContext();
         var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
 
-        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
             "Draenor",
             CharacterClass.DeathKnight,
             CharacterSpecialization.DeathKnightFrost,
-            CharacterRole.Damage));
+            CharacterRole.Damage)));
 
         Assert.Equal(CharacterClass.DeathKnight, character.CharacterClass);
         Assert.Single(await context.ListCharactersHandler.HandleAsync(new ListCharactersQuery()));
+    }
+
+    [Fact]
+    public async Task CreateCharacter_With_Invalid_Class_Specialization_Returns_Validation()
+    {
+        var context = new TestContext();
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+
+        var result = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            player.Id,
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.MageFrost,
+            CharacterRole.Damage));
+
+        AssertFailure(result, FailureType.Validation, "specialization");
+    }
+
+    [Fact]
+    public async Task CreateCharacter_With_Duplicate_Identity_Returns_Conflict()
+    {
+        var context = new TestContext();
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+
+        AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            player.Id,
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage)));
+
+        var result = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            player.Id,
+            " alysa ",
+            "eu",
+            "draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinHoly,
+            CharacterRole.Healer));
+
+        AssertFailure(result, FailureType.Conflict, "Duplicate character");
+    }
+
+    [Fact]
+    public async Task SetMainCharacter_For_Missing_Character_Returns_NotFound()
+    {
+        var context = new TestContext();
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+
+        var result = await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, Guid.NewGuid()));
+
+        AssertFailure(result, FailureType.NotFound, "Character");
+    }
+
+    [Fact]
+    public async Task SetMainCharacter_For_Missing_Player_Returns_NotFound()
+    {
+        var context = new TestContext();
+
+        var result = await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(Guid.NewGuid(), Guid.NewGuid()));
+
+        AssertFailure(result, FailureType.NotFound, "Player");
+    }
+
+    [Fact]
+    public async Task AddPlayerToGuild_When_Player_Is_Already_Member_Returns_Conflict()
+    {
+        var context = new TestContext();
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
+
+        var result = await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Officer));
+
+        AssertFailure(result, FailureType.Conflict, "already a guild member");
+    }
+
+    [Fact]
+    public async Task AddPlayerToGuild_When_Guild_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+
+        var result = await context.AddPlayerToGuildHandler.HandleAsync(
+            new AddPlayerToGuildCommand(Guid.NewGuid(), player.Id, GuildRank.Member));
+
+        AssertFailure(result, FailureType.NotFound, "Guild");
+    }
+
+    [Fact]
+    public async Task AddPlayerToGuild_When_Player_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+
+        var result = await context.AddPlayerToGuildHandler.HandleAsync(
+            new AddPlayerToGuildCommand(guild.Id, Guid.NewGuid(), GuildRank.Member));
+
+        AssertFailure(result, FailureType.NotFound, "Player");
+    }
+
+    [Fact]
+    public async Task AddPlayerToGuild_With_Invalid_Rank_Returns_Validation()
+    {
+        var context = new TestContext();
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+
+        var result = await context.AddPlayerToGuildHandler.HandleAsync(
+            new AddPlayerToGuildCommand(guild.Id, player.Id, (GuildRank)999));
+
+        AssertFailure(result, FailureType.Validation, "rank");
+    }
+
+    [Fact]
+    public async Task AddPlayerToRaidTeam_When_Guild_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+
+        var result = await context.AddPlayerToRaidTeamHandler.HandleAsync(
+            new AddPlayerToRaidTeamCommand(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()));
+
+        AssertFailure(result, FailureType.NotFound, "Guild");
+    }
+
+    [Fact]
+    public async Task AddPlayerToRaidTeam_When_Player_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+
+        var result = await context.AddPlayerToRaidTeamHandler.HandleAsync(
+            new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, Guid.NewGuid()));
+
+        AssertFailure(result, FailureType.NotFound, "Player");
+    }
+
+    [Fact]
+    public async Task AddPlayerToRaidTeam_When_Player_Has_No_Main_Character_Returns_BusinessRule()
+    {
+        var context = new TestContext();
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+
+        var result = await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+
+        AssertFailure(result, FailureType.BusinessRule, "main character");
+    }
+
+    [Fact]
+    public async Task AddPlayerToRaidTeam_When_Player_Is_Already_Member_Returns_Conflict()
+    {
+        var context = new TestContext();
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            player.Id,
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage)));
+        AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+        AssertSuccess(await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
+
+        var result = await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+
+        AssertFailure(result, FailureType.Conflict, "already a member");
+    }
+
+    [Fact]
+    public async Task DeletePlayer_When_Player_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+
+        var result = await context.DeletePlayerHandler.HandleAsync(new DeletePlayerCommand(Guid.NewGuid()));
+
+        AssertFailure(result, FailureType.NotFound, "Player");
+    }
+
+    private static T AssertSuccess<T>(Result<T> result)
+    {
+        Assert.True(result.IsSuccess);
+        Assert.False(result.IsFailure);
+        Assert.Null(result.Failure);
+        Assert.NotNull(result.Value);
+        return result.Value;
+    }
+
+    private static void AssertSuccess(Result result)
+    {
+        Assert.True(result.IsSuccess);
+        Assert.False(result.IsFailure);
+        Assert.Null(result.Failure);
+    }
+
+    private static void AssertFailure<T>(Result<T> result, FailureType expectedType, string expectedMessagePart)
+    {
+        Assert.False(result.IsSuccess);
+        Assert.True(result.IsFailure);
+        Assert.Null(result.Value);
+        Assert.NotNull(result.Failure);
+        Assert.Equal(expectedType, result.Failure.Type);
+        Assert.Contains(expectedMessagePart, result.Failure.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AssertFailure(Result result, FailureType expectedType, string expectedMessagePart)
+    {
+        Assert.False(result.IsSuccess);
+        Assert.True(result.IsFailure);
+        Assert.NotNull(result.Failure);
+        Assert.Equal(expectedType, result.Failure.Type);
+        Assert.Contains(expectedMessagePart, result.Failure.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class TestContext

@@ -1,5 +1,6 @@
 using Guildwise.Application.Abstractions.Persistence;
 using Guildwise.Application.Common;
+using Guildwise.Application.Common.Results;
 
 namespace Guildwise.Application.Players.DeletePlayer;
 
@@ -14,11 +15,15 @@ public sealed class DeletePlayerHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public async Task HandleAsync(DeletePlayerCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(DeletePlayerCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
+        var player = await _playerRepository.GetByIdAsync(command.PlayerId, cancellationToken);
+        if (player is null)
+        {
+            return Result.NotFound($"Player '{command.PlayerId}' was not found.");
+        }
 
         var guilds = await _guildRepository.ListAsync(cancellationToken);
         foreach (var guild in guilds)
@@ -28,5 +33,6 @@ public sealed class DeletePlayerHandler
 
         await _guildRepository.SaveChangesAsync(cancellationToken);
         await _playerRepository.RemoveAsync(command.PlayerId, cancellationToken);
+        return Result.Success();
     }
 }

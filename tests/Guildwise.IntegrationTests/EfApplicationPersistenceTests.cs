@@ -1,5 +1,6 @@
 using Guildwise.Application.Characters.CreateCharacter;
 using Guildwise.Application.Characters.SetMainCharacter;
+using Guildwise.Application.Common.Results;
 using Guildwise.Application.GuildMembers.AddPlayerToGuild;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
@@ -35,14 +36,14 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         {
             var handler = new CreateCharacterHandler(new EfPlayerRepository(actContext));
 
-            await handler.HandleAsync(new CreateCharacterCommand(
+            AssertSuccess(await handler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 characterName,
                 "EU",
                 "Draenor",
                 CharacterClass.Mage,
                 CharacterSpecialization.MageFrost,
-                CharacterRole.Damage));
+                CharacterRole.Damage)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
@@ -61,7 +62,7 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         {
             var handler = new SetMainCharacterHandler(new EfPlayerRepository(actContext));
 
-            await handler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+            AssertSuccess(await handler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
@@ -100,7 +101,7 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             var playerRepository = new EfPlayerRepository(actContext);
             var handler = new AddPlayerToGuildHandler(guildRepository, playerRepository);
 
-            await handler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            AssertSuccess(await handler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
@@ -122,7 +123,7 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             var playerRepository = new EfPlayerRepository(actContext);
             var handler = new AddPlayerToRaidTeamHandler(guildRepository, playerRepository);
 
-            await handler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+            AssertSuccess(await handler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
@@ -201,4 +202,11 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
 
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
+
+    private static void AssertSuccess<T>(Result<T> result)
+    {
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Null(result.Failure);
+    }
 }
