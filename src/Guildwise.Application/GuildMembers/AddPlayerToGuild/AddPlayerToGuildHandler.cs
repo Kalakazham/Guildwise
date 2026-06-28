@@ -1,5 +1,6 @@
 using Guildwise.Application.Abstractions.Persistence;
 using Guildwise.Application.Common;
+using Guildwise.Application.Common.Results;
 using Guildwise.Application.Contracts.GuildMembers;
 
 namespace Guildwise.Application.GuildMembers.AddPlayerToGuild;
@@ -15,14 +16,37 @@ public sealed class AddPlayerToGuildHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public GuildMemberDto Handle(AddPlayerToGuildCommand command)
+    public async Task<Result<GuildMemberDto>> HandleAsync(
+        AddPlayerToGuildCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var guild = await _guildRepository.GetByIdAsync(command.GuildId, cancellationToken);
+        if (guild is null)
+        {
+            return Result<GuildMemberDto>.NotFound($"Guild '{command.GuildId}' was not found.");
+        }
+
+        var player = await _playerRepository.GetByIdAsync(command.PlayerId, cancellationToken);
+        if (player is null)
+        {
+            return Result<GuildMemberDto>.NotFound($"Player '{command.PlayerId}' was not found.");
+        }
+
+        if (EqualityComparer<Guildwise.Domain.GuildRank>.Default.Equals(command.Rank, default)
+            || !Enum.IsDefined(command.Rank))
+        {
+            return Result<GuildMemberDto>.Validation("Guild rank is required.");
+        }
+
+        if (guild.Members.Any(member => member.PlayerId == player.Id))
+        {
+            return Result<GuildMemberDto>.Conflict("Player is already a guild member.");
+        }
+
         var member = guild.AddMember(player, command.Rank);
-        _guildRepository.SaveChanges();
-        return DtoMapper.ToDto(member);
+        await _guildRepository.SaveChangesAsync(cancellationToken);
+        return Result<GuildMemberDto>.Success(DtoMapper.ToDto(member));
     }
 }

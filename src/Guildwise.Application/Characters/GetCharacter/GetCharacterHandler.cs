@@ -13,11 +13,13 @@ public sealed class GetCharacterHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public CharacterDto? Handle(GetCharacterQuery query)
+    public async Task<CharacterDto?> HandleAsync(
+        GetCharacterQuery query,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var player = _playerRepository.GetById(query.PlayerId);
+        var player = await _playerRepository.GetByIdAsync(query.PlayerId, cancellationToken);
         var character = player?.Characters.FirstOrDefault(existing => existing.Id == query.CharacterId);
 
         return character is null ? null : DtoMapper.ToDto(character);

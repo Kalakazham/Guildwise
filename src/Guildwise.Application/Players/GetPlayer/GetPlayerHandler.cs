@@ -13,11 +13,13 @@ public sealed class GetPlayerHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public PlayerDto? Handle(GetPlayerQuery query)
+    public async Task<PlayerDto?> HandleAsync(
+        GetPlayerQuery query,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return _playerRepository.GetById(query.PlayerId) is { } player
+        return await _playerRepository.GetByIdAsync(query.PlayerId, cancellationToken) is { } player
             ? DtoMapper.ToDto(player)
             : null;
     }

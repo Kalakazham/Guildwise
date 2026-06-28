@@ -4,13 +4,13 @@ namespace Guildwise.Application.Abstractions.Persistence;
 
 public interface IPlayerRepository
 {
-    Player? GetById(Guid id);
+    Task<Player?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    IReadOnlyCollection<Player> List();
+    Task<IReadOnlyCollection<Player>> ListAsync(CancellationToken cancellationToken = default);
 
-    void Add(Player player);
+    Task AddAsync(Player player, CancellationToken cancellationToken = default);
 
-    void Remove(Guid id);
+    Task RemoveAsync(Guid id, CancellationToken cancellationToken = default);
 
-    void SaveChanges();
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -13,41 +13,34 @@ public sealed class EfPlayerRepository : IPlayerRepository
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
 
-    public Player? GetById(Guid id)
+    public Task<Player?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => PlayersWithCharacters()
-            .SingleOrDefault(player => player.Id == id);
+            .SingleOrDefaultAsync(player => player.Id == id, cancellationToken);
 
-    public IReadOnlyCollection<Player> List()
-        => PlayersWithCharacters()
+    public async Task<IReadOnlyCollection<Player>> ListAsync(CancellationToken cancellationToken = default)
+        => await PlayersWithCharacters()
             .OrderBy(player => player.DisplayName)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-    public void Add(Player player)
+    public async Task AddAsync(Player player, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(player);
 
         var mainCharacterId = player.MainCharacterId;
-        _dbContext.Players.Add(player);
+        await _dbContext.Players.AddAsync(player, cancellationToken);
 
         if (mainCharacterId.HasValue)
         {
-            var mainCharacterProperty = _dbContext.Entry(player)
-                .Property(existing => existing.MainCharacterId);
-            mainCharacterProperty.CurrentValue = null;
-            SaveChanges();
-
-            mainCharacterProperty.CurrentValue = mainCharacterId;
-            mainCharacterProperty.IsModified = true;
-            SaveChanges();
+            await AddWithMainCharacterAsync(player, mainCharacterId.Value, cancellationToken);
             return;
         }
 
-        SaveChanges();
+        await SaveChangesAsync(cancellationToken);
     }
 
-    public void Remove(Guid id)
+    public async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var player = GetById(id);
+        var player = await GetByIdAsync(id, cancellationToken);
         if (player is null)
         {
             return;
@@ -59,18 +52,58 @@ public sealed class EfPlayerRepository : IPlayerRepository
                 .Property(existing => existing.MainCharacterId);
             mainCharacterProperty.CurrentValue = null;
             mainCharacterProperty.IsModified = true;
-            SaveChanges();
+            await SaveChangesAsync(cancellationToken);
         }
 
         _dbContext.Players.Remove(player);
-        SaveChanges();
+        await SaveChangesAsync(cancellationToken);
     }
 
-    public void SaveChanges()
-        => _dbContext.SaveChanges();
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        => _dbContext.SaveChangesAsync(cancellationToken);
 
     private IQueryable<Player> PlayersWithCharacters()
         => _dbContext.Players
             .Include(player => player.Characters)
             .AsSplitQuery();
+
+    private async Task AddWithMainCharacterAsync(
+        Player player,
+        Guid mainCharacterId,
+        CancellationToken cancellationToken)
+    {
+        if (_dbContext.Database.CurrentTransaction is not null)
+        {
+            await SaveWithMainCharacterWorkaroundAsync(player, mainCharacterId, cancellationToken);
+            return;
+        }
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            await SaveWithMainCharacterWorkaroundAsync(player, mainCharacterId, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    private async Task SaveWithMainCharacterWorkaroundAsync(
+        Player player,
+        Guid mainCharacterId,
+        CancellationToken cancellationToken)
+    {
+        var mainCharacterProperty = _dbContext.Entry(player)
+            .Property(existing => existing.MainCharacterId);
+        mainCharacterProperty.CurrentValue = null;
+        await SaveChangesAsync(cancellationToken);
+
+        mainCharacterProperty.CurrentValue = mainCharacterId;
+        mainCharacterProperty.IsModified = true;
+        await SaveChangesAsync(cancellationToken);
+    }
 }

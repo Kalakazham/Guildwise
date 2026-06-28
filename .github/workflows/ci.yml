@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore packages
+        run: dotnet restore Guildwise.sln
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Build
+        run: dotnet build Guildwise.sln --no-restore
+
+      - name: Test
+        run: dotnet test Guildwise.sln --no-build

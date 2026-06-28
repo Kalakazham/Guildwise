@@ -3,6 +3,8 @@ using Guildwise.Domain;
 using Guildwise.Infrastructure;
 using Guildwise.Infrastructure.Persistence;
 using Guildwise.IntegrationTests.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,21 +49,49 @@ public sealed class EfRepositoryTests : IAsyncLifetime
             descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
                 && descriptor.ImplementationType == typeof(EfPlayerRepository)
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(EfTransactionRunner)
+                && descriptor.Lifetime == ServiceLifetime.Scoped);
     }
 
     [Fact]
-    public void EfPlayerRepository_Saves_And_Loads_Player()
+    public async Task EfTransactionRunner_Rolls_Back_When_Operation_Throws()
+    {
+        var guildName = UniqueName("Guild");
+
+        using (var actContext = _fixture.CreateDbContext())
+        {
+            var transactionRunner = new EfTransactionRunner(actContext);
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                transactionRunner.ExecuteAsync(async cancellationToken =>
+                {
+                    await actContext.Guilds.AddAsync(Guild.Create(guildName, "EU", "Draenor"), cancellationToken);
+                    await actContext.SaveChangesAsync(cancellationToken);
+                    throw new InvalidOperationException("Forced transaction failure.");
+                }));
+
+            Assert.Equal("Forced transaction failure.", exception.Message);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        Assert.Empty(assertContext.Guilds.Where(guild => guild.Name == guildName));
+    }
+
+    [Fact]
+    public async Task EfPlayerRepository_Saves_And_Loads_Player()
     {
         var displayName = UniqueName("Player");
         var player = Player.Create(displayName);
 
         using (var arrangeContext = _fixture.CreateDbContext())
         {
-            new EfPlayerRepository(arrangeContext).Add(player);
+            await new EfPlayerRepository(arrangeContext).AddAsync(player);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal(displayName, loaded.DisplayName);
@@ -70,7 +100,7 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfPlayerRepository_Saves_And_Loads_Player_With_Characters_And_MainCharacter()
+    public async Task EfPlayerRepository_Saves_And_Loads_Player_With_Characters_And_MainCharacter()
     {
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
@@ -84,11 +114,11 @@ public sealed class EfRepositoryTests : IAsyncLifetime
 
         using (var arrangeContext = _fixture.CreateDbContext())
         {
-            new EfPlayerRepository(arrangeContext).Add(player);
+            await new EfPlayerRepository(arrangeContext).AddAsync(player);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal(character.Id, loaded.MainCharacterId);
@@ -100,17 +130,48 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfGuildRepository_Saves_And_Loads_Guild()
+    public async Task EfPlayerRepository_Rolls_Back_Player_With_MainCharacter_When_Second_Save_Fails()
+    {
+        var player = Player.Create(UniqueName("Player"));
+        var character = player.AddCharacter(
+            UniqueName("Alysa"),
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage);
+        player.SetMainCharacter(character);
+        var interceptor = new ThrowOnSecondSaveChangesInterceptor();
+        var options = new DbContextOptionsBuilder<GuildwiseDbContext>()
+            .UseNpgsql(_fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        using (var arrangeContext = new GuildwiseDbContext(options))
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => new EfPlayerRepository(arrangeContext).AddAsync(player));
+
+            Assert.Equal("Forced second save failure.", exception.Message);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        Assert.Null(await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id));
+        Assert.False(await assertContext.Set<Character>().AnyAsync(existingCharacter => existingCharacter.Id == character.Id));
+    }
+
+    [Fact]
+    public async Task EfGuildRepository_Saves_And_Loads_Guild()
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
 
         using (var arrangeContext = _fixture.CreateDbContext())
         {
-            new EfGuildRepository(arrangeContext).Add(guild);
+            await new EfGuildRepository(arrangeContext).AddAsync(guild);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal(guild.Name, loaded.Name);
@@ -121,7 +182,7 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfGuildRepository_Saves_And_Loads_Guild_Members_RaidTeams_And_RaidTeamMembers()
+    public async Task EfGuildRepository_Saves_And_Loads_Guild_Members_RaidTeams_And_RaidTeamMembers()
     {
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
@@ -141,16 +202,16 @@ public sealed class EfRepositoryTests : IAsyncLifetime
 
         using (var playerContext = _fixture.CreateDbContext())
         {
-            new EfPlayerRepository(playerContext).Add(player);
+            await new EfPlayerRepository(playerContext).AddAsync(player);
         }
 
         using (var guildContext = _fixture.CreateDbContext())
         {
-            new EfGuildRepository(guildContext).Add(guild);
+            await new EfGuildRepository(guildContext).AddAsync(guild);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
 
         Assert.NotNull(loaded);
         var loadedMember = Assert.Single(loaded.Members);
@@ -168,4 +229,24 @@ public sealed class EfRepositoryTests : IAsyncLifetime
 
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
+
+    private sealed class ThrowOnSecondSaveChangesInterceptor : SaveChangesInterceptor
+    {
+        private int _saveChangesCalls;
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            _saveChangesCalls++;
+
+            if (_saveChangesCalls == 2)
+            {
+                throw new InvalidOperationException("Forced second save failure.");
+            }
+
+            return new ValueTask<InterceptionResult<int>>(result);
+        }
+    }
 }

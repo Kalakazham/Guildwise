@@ -1,6 +1,9 @@
+using Guildwise.Application.Abstractions.Persistence;
 using Guildwise.Application.Characters.CreateCharacter;
 using Guildwise.Application.Characters.SetMainCharacter;
+using Guildwise.Application.Common.Results;
 using Guildwise.Application.GuildMembers.AddPlayerToGuild;
+using Guildwise.Application.Players.DeletePlayer;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
 using Guildwise.Domain;
@@ -26,73 +29,73 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         => Task.CompletedTask;
 
     [Fact]
-    public void CreateCharacter_Persists_Character_For_Existing_Player()
+    public async Task CreateCharacter_Persists_Character_For_Existing_Player()
     {
-        var player = AddPlayer();
+        var player = await AddPlayerAsync();
         var characterName = UniqueName("Alysa");
 
         using (var actContext = _fixture.CreateDbContext())
         {
             var handler = new CreateCharacterHandler(new EfPlayerRepository(actContext));
 
-            handler.Handle(new CreateCharacterCommand(
+            AssertSuccess(await handler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 characterName,
                 "EU",
                 "Draenor",
                 CharacterClass.Mage,
                 CharacterSpecialization.MageFrost,
-                CharacterRole.Damage));
+                CharacterRole.Damage)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
         var character = Assert.Single(loaded!.Characters);
         Assert.Equal(characterName, character.Name);
     }
 
     [Fact]
-    public void SetMainCharacter_Persists_Main_Character_Assignment()
+    public async Task SetMainCharacter_Persists_Main_Character_Assignment()
     {
-        var player = AddPlayerWithCharacter();
+        var player = await AddPlayerWithCharacterAsync();
         var character = player.Characters.Single();
 
         using (var actContext = _fixture.CreateDbContext())
         {
             var handler = new SetMainCharacterHandler(new EfPlayerRepository(actContext));
 
-            handler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
+            AssertSuccess(await handler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
         Assert.Equal(character.Id, loaded!.MainCharacterId);
     }
 
     [Fact]
-    public void CreateRaidTeam_Persists_Raid_Team_For_Existing_Guild()
+    public async Task CreateRaidTeam_Persists_Raid_Team_For_Existing_Guild()
     {
-        var guild = AddGuild();
+        var guild = await AddGuildAsync();
         var raidTeamName = UniqueName("RaidTeam");
 
         using (var actContext = _fixture.CreateDbContext())
         {
             var handler = new CreateRaidTeamHandler(new EfGuildRepository(actContext));
 
-            handler.Handle(new CreateRaidTeamCommand(guild.Id, raidTeamName));
+            AssertSuccess(await handler.HandleAsync(new CreateRaidTeamCommand(guild.Id, raidTeamName)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
         var raidTeam = Assert.Single(loaded!.RaidTeams);
         Assert.Equal(raidTeamName, raidTeam.Name);
     }
 
     [Fact]
-    public void AddPlayerToGuild_Persists_Guild_Membership()
+    public async Task AddPlayerToGuild_Persists_Guild_Membership()
     {
-        var guild = AddGuild();
-        var player = AddPlayer();
+        var guild = await AddGuildAsync();
+        var player = await AddPlayerAsync();
 
         using (var actContext = _fixture.CreateDbContext())
         {
@@ -100,20 +103,20 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             var playerRepository = new EfPlayerRepository(actContext);
             var handler = new AddPlayerToGuildHandler(guildRepository, playerRepository);
 
-            handler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            AssertSuccess(await handler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
         var member = Assert.Single(loaded!.Members);
         Assert.Equal(player.Id, member.PlayerId);
     }
 
     [Fact]
-    public void AddPlayerToRaidTeam_Persists_Raid_Team_Membership()
+    public async Task AddPlayerToRaidTeam_Persists_Raid_Team_Membership()
     {
-        var player = AddPlayerWithMainCharacter();
-        var guild = AddGuildWithMemberAndRaidTeam(player);
+        var player = await AddPlayerWithMainCharacterAsync();
+        var guild = await AddGuildWithMemberAndRaidTeamAsync(player);
         var raidTeam = guild.RaidTeams.Single();
 
         using (var actContext = _fixture.CreateDbContext())
@@ -122,27 +125,69 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             var playerRepository = new EfPlayerRepository(actContext);
             var handler = new AddPlayerToRaidTeamHandler(guildRepository, playerRepository);
 
-            handler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+            AssertSuccess(await handler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
         var loadedRaidTeam = Assert.Single(loaded!.RaidTeams);
         var raidTeamMember = Assert.Single(loadedRaidTeam.Members);
         Assert.Equal(player.Id, raidTeamMember.PlayerId);
     }
 
-    private Player AddPlayer()
+    [Fact]
+    public async Task DeletePlayer_Rolls_Back_Guild_Changes_When_Player_Removal_Throws()
+    {
+        var player = await AddPlayerWithMainCharacterAsync();
+        var guild = await AddGuildWithMemberAndRaidTeamMemberAsync(player);
+
+        using (var arrangeAssertContext = _fixture.CreateDbContext())
+        {
+            var arrangedGuild = await new EfGuildRepository(arrangeAssertContext).GetByIdAsync(guild.Id);
+            Assert.NotNull(arrangedGuild);
+            Assert.Equal(player.Id, Assert.Single(arrangedGuild.Members).PlayerId);
+            Assert.Equal(player.Id, Assert.Single(Assert.Single(arrangedGuild.RaidTeams).Members).PlayerId);
+        }
+
+        using (var actContext = _fixture.CreateDbContext())
+        {
+            var playerRepository = new EfPlayerRepository(actContext);
+            var throwingPlayerRepository = new ThrowingRemovePlayerRepository(
+                playerRepository,
+                () => actContext.Database.CurrentTransaction is not null);
+            var handler = new DeletePlayerHandler(
+                new EfGuildRepository(actContext),
+                throwingPlayerRepository,
+                new EfTransactionRunner(actContext));
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => handler.HandleAsync(new DeletePlayerCommand(player.Id)));
+
+            Assert.Equal("Forced player removal failure.", exception.Message);
+            Assert.True(throwingPlayerRepository.SawActiveTransaction);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var loadedPlayer = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
+        var loadedGuild = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
+
+        Assert.NotNull(loadedPlayer);
+        Assert.NotNull(loadedGuild);
+        Assert.Equal(player.Id, Assert.Single(loadedGuild.Members).PlayerId);
+        Assert.Equal(player.Id, Assert.Single(Assert.Single(loadedGuild.RaidTeams).Members).PlayerId);
+    }
+
+    private async Task<Player> AddPlayerAsync()
     {
         var player = Player.Create(UniqueName("Player"));
 
         using var context = _fixture.CreateDbContext();
-        new EfPlayerRepository(context).Add(player);
+        await new EfPlayerRepository(context).AddAsync(player);
 
         return player;
     }
 
-    private Player AddPlayerWithCharacter()
+    private async Task<Player> AddPlayerWithCharacterAsync()
     {
         var player = Player.Create(UniqueName("Player"));
         player.AddCharacter(
@@ -154,12 +199,12 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             CharacterRole.Damage);
 
         using var context = _fixture.CreateDbContext();
-        new EfPlayerRepository(context).Add(player);
+        await new EfPlayerRepository(context).AddAsync(player);
 
         return player;
     }
 
-    private Player AddPlayerWithMainCharacter()
+    private async Task<Player> AddPlayerWithMainCharacterAsync()
     {
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
@@ -172,33 +217,86 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         player.SetMainCharacter(character);
 
         using var context = _fixture.CreateDbContext();
-        new EfPlayerRepository(context).Add(player);
+        await new EfPlayerRepository(context).AddAsync(player);
 
         return player;
     }
 
-    private Guild AddGuild()
+    private async Task<Guild> AddGuildAsync()
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
 
         using var context = _fixture.CreateDbContext();
-        new EfGuildRepository(context).Add(guild);
+        await new EfGuildRepository(context).AddAsync(guild);
 
         return guild;
     }
 
-    private Guild AddGuildWithMemberAndRaidTeam(Player player)
+    private async Task<Guild> AddGuildWithMemberAndRaidTeamAsync(Player player)
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
         guild.AddMember(player, GuildRank.Member);
         guild.CreateRaidTeam(UniqueName("RaidTeam"));
 
         using var context = _fixture.CreateDbContext();
-        new EfGuildRepository(context).Add(guild);
+        await new EfGuildRepository(context).AddAsync(guild);
+
+        return guild;
+    }
+
+    private async Task<Guild> AddGuildWithMemberAndRaidTeamMemberAsync(Player player)
+    {
+        var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
+        guild.AddMember(player, GuildRank.Member);
+        var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
+        guild.AddPlayerToRaidTeam(raidTeam, player);
+
+        using var context = _fixture.CreateDbContext();
+        await new EfGuildRepository(context).AddAsync(guild);
 
         return guild;
     }
 
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
+
+    private static void AssertSuccess<T>(Result<T> result)
+    {
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Null(result.Failure);
+    }
+
+    private sealed class ThrowingRemovePlayerRepository : IPlayerRepository
+    {
+        private readonly IPlayerRepository _inner;
+
+        private readonly Func<bool> _hasActiveTransaction;
+
+        public ThrowingRemovePlayerRepository(IPlayerRepository inner, Func<bool> hasActiveTransaction)
+        {
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            _hasActiveTransaction = hasActiveTransaction ?? throw new ArgumentNullException(nameof(hasActiveTransaction));
+        }
+
+        public bool SawActiveTransaction { get; private set; }
+
+        public Task<Player?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => _inner.GetByIdAsync(id, cancellationToken);
+
+        public Task<IReadOnlyCollection<Player>> ListAsync(CancellationToken cancellationToken = default)
+            => _inner.ListAsync(cancellationToken);
+
+        public Task AddAsync(Player player, CancellationToken cancellationToken = default)
+            => _inner.AddAsync(player, cancellationToken);
+
+        public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            SawActiveTransaction = _hasActiveTransaction();
+            throw new InvalidOperationException("Forced player removal failure.");
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+            => _inner.SaveChangesAsync(cancellationToken);
+    }
 }

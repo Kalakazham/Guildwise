@@ -1,12 +1,15 @@
 using Guildwise.Application;
 using Guildwise.Infrastructure;
+using Guildwise.Web;
 using Guildwise.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddGuildwiseApplicationUseCases();
-AddConfiguredInfrastructure(builder);
+builder.Services.AddConfiguredGuildwiseInfrastructure(
+    builder.Configuration,
+    builder.Environment.IsDevelopment());
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -30,24 +33,3 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
-
-static void AddConfiguredInfrastructure(WebApplicationBuilder builder)
-{
-    var persistenceProvider = builder.Configuration["Guildwise:PersistenceProvider"];
-
-    if (string.IsNullOrWhiteSpace(persistenceProvider)
-        || string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase))
-    {
-        builder.Services.AddInMemoryInfrastructure();
-        return;
-    }
-
-    if (string.Equals(persistenceProvider, "Postgres", StringComparison.OrdinalIgnoreCase))
-    {
-        builder.Services.AddPostgresInfrastructure(builder.Configuration);
-        return;
-    }
-
-    throw new InvalidOperationException(
-        "Configuration value 'Guildwise:PersistenceProvider' must be either 'InMemory' or 'Postgres'.");
-}

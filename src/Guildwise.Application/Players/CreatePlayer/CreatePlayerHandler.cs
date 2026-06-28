@@ -1,5 +1,6 @@
 using Guildwise.Application.Abstractions.Persistence;
 using Guildwise.Application.Common;
+using Guildwise.Application.Common.Results;
 using Guildwise.Application.Contracts.Players;
 using Guildwise.Domain;
 
@@ -14,12 +15,19 @@ public sealed class CreatePlayerHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public PlayerDto Handle(CreatePlayerCommand command)
+    public async Task<Result<PlayerDto>> HandleAsync(
+        CreatePlayerCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        if (string.IsNullOrWhiteSpace(command.DisplayName))
+        {
+            return Result<PlayerDto>.Validation("Player display name is required.");
+        }
+
         var player = Player.Create(command.DisplayName);
-        _playerRepository.Add(player);
-        return DtoMapper.ToDto(player);
+        await _playerRepository.AddAsync(player, cancellationToken);
+        return Result<PlayerDto>.Success(DtoMapper.ToDto(player));
     }
 }

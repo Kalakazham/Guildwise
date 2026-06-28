@@ -13,10 +13,13 @@ public sealed class ListGuildsHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public IReadOnlyList<GuildDto> Handle(ListGuildsQuery query)
+    public async Task<IReadOnlyList<GuildDto>> HandleAsync(
+        ListGuildsQuery query,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return _guildRepository.List().Select(DtoMapper.ToDto).ToList();
+        var guilds = await _guildRepository.ListAsync(cancellationToken);
+        return guilds.Select(DtoMapper.ToDto).ToList();
     }
 }

@@ -8,6 +8,30 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Added Application result primitives for expected use-case outcomes.
+- Added tests for expected Application result failure outcomes.
+- Architecture documentation for Application result handling and transaction boundaries.
+- Developer setup documentation for local PostgreSQL, migrations, Web startup and tests.
+- GitHub Actions CI for restore, build and tests.
+- Persistence transaction runner abstraction with EF and in-memory implementations.
+- Repository line-ending normalization rules.
+
+### Changed
+
+- Improved Web feedback for expected Application result failures.
+- Made non-development persistence configuration fail fast for missing or unsafe settings.
+- Made player deletion persistence atomic across guild and player changes.
+- Made player main-character persistence transactional during insert.
+- Refactored core roster command handlers to return structured Application results for expected outcomes.
+- Refactored remaining roster command handlers to return structured Application results.
+- Refactored persistence-facing repositories and use case handlers to async APIs.
+
+### Fixed
+
+## [0.2.0] - 2026-06-28
+
+### Added
+
 - Initial modular monolith solution structure.
 - Project guardrails for AI-assisted development.
 - Architecture documentation and ADRs.
@@ -28,9 +52,3 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Refactored the Application layer from a single roster application service into explicit use case handlers.
 
 ### Fixed
-
-## [0.2.0] - 2026-06-28
-
-### Added
-
-- Planned: Manual guild, raid team and roster dashboard.
