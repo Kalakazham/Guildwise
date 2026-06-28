@@ -13,8 +13,19 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Architecture documentation and ADRs.
 - Unit, integration and architecture test projects.
 - GitVersion setup for automated version calculation.
+- Manual guild roster domain model and unit tests for the first feature slice.
+- Application use case handlers for manual guild roster setup.
+- Temporary in-memory storage for guild and player aggregate roots.
+- Minimal Blazor verification UI for manual guild roster setup.
+- EF Core PostgreSQL persistence foundation.
+- Initial EF Core mappings and migration for guild roster persistence.
+- EF-backed repositories for persistent guild roster storage.
+- Testcontainers-based PostgreSQL persistence integration tests.
+- Wired the Web app to use configurable PostgreSQL persistence in development.
 
 ### Changed
+
+- Refactored the Application layer from a single roster application service into explicit use case handlers.
 
 ### Fixed
 

@@ -10,4 +10,8 @@
       <ProjectReference Include="..\Guildwise.Domain\Guildwise.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    </ItemGroup>
+
 </Project>
