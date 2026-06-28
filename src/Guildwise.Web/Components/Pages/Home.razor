@@ -272,11 +272,10 @@
     {
         await RunActionAsync(async () =>
         {
-            var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand(guildName, guildRegion, guildRealm));
-            selectedGuildId = guild.Id.ToString();
-            statusMessage = $"Created guild {guild.Name}.";
-            statusKind = "success";
-            await RefreshDataAsync();
+            await RunResultActionAsync(
+                () => CreateGuildHandler.HandleAsync(new CreateGuildCommand(guildName, guildRegion, guildRealm)),
+                guild => $"Created guild {guild.Name}.",
+                guild => selectedGuildId = guild.Id.ToString());
         });
     }
 
@@ -284,11 +283,10 @@
     {
         await RunActionAsync(async () =>
         {
-            var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand(playerName));
-            selectedPlayerId = player.Id.ToString();
-            statusMessage = $"Created player {player.DisplayName}.";
-            statusKind = "success";
-            await RefreshDataAsync();
+            await RunResultActionAsync(
+                () => CreatePlayerHandler.HandleAsync(new CreatePlayerCommand(playerName)),
+                player => $"Created player {player.DisplayName}.",
+                player => selectedPlayerId = player.Id.ToString());
         });
     }
 
@@ -341,11 +339,10 @@
                 return;
             }
 
-            var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guildId, raidTeamName));
-            selectedRaidTeamId = raidTeam.Id.ToString();
-            statusMessage = $"Created raid team {raidTeam.Name}.";
-            statusKind = "success";
-            await RefreshDataAsync();
+            await RunResultActionAsync(
+                () => CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guildId, raidTeamName)),
+                raidTeam => $"Created raid team {raidTeam.Name}.",
+                raidTeam => selectedRaidTeamId = raidTeam.Id.ToString());
         });
     }
 
@@ -387,8 +384,23 @@
         await RunActionAsync(async () =>
         {
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
-            var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand($"Myrmi {suffix}"));
+            var createGuildResult = await CreateGuildHandler.HandleAsync(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
+            if (createGuildResult.IsFailure)
+            {
+                ShowFailure(createGuildResult.Failure!);
+                return;
+            }
+
+            var guild = GetSuccessfulValue(createGuildResult);
+            var createPlayerResult = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand($"Myrmi {suffix}"));
+            if (createPlayerResult.IsFailure)
+            {
+                ShowFailure(createPlayerResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
+
+            var player = GetSuccessfulValue(createPlayerResult);
             var createCharacterResult = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 $"Alysa{suffix[^4..]}",
@@ -414,7 +426,15 @@
                 return;
             }
 
-            var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+            var createRaidTeamResult = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+            if (createRaidTeamResult.IsFailure)
+            {
+                ShowFailure(createRaidTeamResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
+
+            var raidTeam = GetSuccessfulValue(createRaidTeamResult);
             var addToGuildResult = await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
             if (addToGuildResult.IsFailure)
             {
@@ -480,6 +500,12 @@
     }
 
     private async Task RunResultActionAsync<T>(Func<Task<Result<T>>> action, string successMessage)
+        => await RunResultActionAsync(action, _ => successMessage);
+
+    private async Task RunResultActionAsync<T>(
+        Func<Task<Result<T>>> action,
+        Func<T, string> successMessage,
+        Action<T>? onSuccess = null)
     {
         var result = await action();
         if (result.IsFailure)
@@ -488,8 +514,9 @@
             return;
         }
 
-        GetSuccessfulValue(result);
-        statusMessage = successMessage;
+        var value = GetSuccessfulValue(result);
+        onSuccess?.Invoke(value);
+        statusMessage = successMessage(value);
         statusKind = "success";
         await RefreshDataAsync();
     }

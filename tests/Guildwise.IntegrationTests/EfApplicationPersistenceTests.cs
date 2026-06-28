@@ -80,7 +80,7 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         {
             var handler = new CreateRaidTeamHandler(new EfGuildRepository(actContext));
 
-            await handler.HandleAsync(new CreateRaidTeamCommand(guild.Id, raidTeamName));
+            AssertSuccess(await handler.HandleAsync(new CreateRaidTeamCommand(guild.Id, raidTeamName)));
         }
 
         using var assertContext = _fixture.CreateDbContext();

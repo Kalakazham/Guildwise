@@ -18,6 +18,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Improved Web feedback for expected Application result failures.
 - Made non-development persistence configuration fail fast for missing or unsafe settings.
 - Refactored core roster command handlers to return structured Application results for expected outcomes.
+- Refactored remaining roster command handlers to return structured Application results.
 - Refactored persistence-facing repositories and use case handlers to async APIs.
 
 ### Fixed
