@@ -28,6 +28,8 @@ dotnet test Guildwise.sln
 
 `dotnet test` runs unit, architecture and integration tests. The integration tests start their own PostgreSQL container through Testcontainers, apply EF Core migrations to that test database automatically, and do not use the local Docker Compose database or host port `55432`.
 
+GitHub Actions CI runs restore, local tool restore, build and tests on pushes and pull requests for `dev` and `main`. CI relies on Docker support from the GitHub-hosted Linux runner so Testcontainers can start its own PostgreSQL container.
+
 ## Local PostgreSQL
 
 Start the local development database:
