@@ -25,6 +25,7 @@ public sealed class DeletePlayerHandler
             guild.RemoveMember(player.Id);
         }
 
+        _guildRepository.SaveChanges();
         _playerRepository.Remove(command.PlayerId);
     }
 }

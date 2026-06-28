@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Minimal Blazor verification UI for manual guild roster setup.
 - EF Core PostgreSQL persistence foundation.
 - Initial EF Core mappings and migration for guild roster persistence.
+- EF-backed repositories for persistent guild roster storage.
 
 ### Changed
 

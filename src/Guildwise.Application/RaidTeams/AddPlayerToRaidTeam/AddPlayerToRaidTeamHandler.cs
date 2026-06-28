@@ -23,6 +23,7 @@ public sealed class AddPlayerToRaidTeamHandler
         var raidTeam = guild.GetRaidTeamOrThrow(command.RaidTeamId);
         var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
         guild.AddPlayerToRaidTeam(raidTeam, player);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(raidTeam);
     }
 }

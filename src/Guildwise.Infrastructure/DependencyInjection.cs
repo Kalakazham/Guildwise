@@ -36,6 +36,8 @@ public static class DependencyInjection
 
         services.AddDbContext<GuildwiseDbContext>(options =>
             options.UseNpgsql(connectionString));
+        services.AddScoped<IGuildRepository, EfGuildRepository>();
+        services.AddScoped<IPlayerRepository, EfPlayerRepository>();
 
         return services;
     }

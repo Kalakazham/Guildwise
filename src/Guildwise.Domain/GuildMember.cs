@@ -2,7 +2,7 @@ namespace Guildwise.Domain;
 
 public sealed class GuildMember
 {
-    private readonly HashSet<AdditionalGuildRole> _additionalRoles = new();
+    private readonly List<AdditionalGuildRole> _additionalRoles = new();
 
     public Guid Id { get; } = Guid.NewGuid();
 
@@ -37,10 +37,12 @@ public sealed class GuildMember
     {
         DomainGuard.RequiredEnum(role, nameof(role));
 
-        if (!_additionalRoles.Add(role))
+        if (_additionalRoles.Contains(role))
         {
             throw new InvalidOperationException("Duplicate additional role.");
         }
+
+        _additionalRoles.Add(role);
     }
 
     public void RemoveAdditionalRole(AdditionalGuildRole role)

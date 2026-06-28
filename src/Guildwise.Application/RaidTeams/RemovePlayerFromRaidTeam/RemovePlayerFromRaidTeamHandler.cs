@@ -20,6 +20,7 @@ public sealed class RemovePlayerFromRaidTeamHandler
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         var raidTeam = guild.GetRaidTeamOrThrow(command.RaidTeamId);
         guild.RemovePlayerFromRaidTeam(raidTeam, command.PlayerId);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(raidTeam);
     }
 }

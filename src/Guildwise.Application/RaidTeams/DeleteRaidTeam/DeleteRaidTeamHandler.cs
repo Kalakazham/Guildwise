@@ -19,5 +19,6 @@ public sealed class DeleteRaidTeamHandler
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         guild.GetRaidTeamOrThrow(command.RaidTeamId);
         guild.RemoveRaidTeam(command.RaidTeamId);
+        _guildRepository.SaveChanges();
     }
 }

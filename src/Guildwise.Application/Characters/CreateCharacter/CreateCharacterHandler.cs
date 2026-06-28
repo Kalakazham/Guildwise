@@ -25,6 +25,7 @@ public sealed class CreateCharacterHandler
             command.CharacterClass,
             command.Specialization,
             command.Role);
+        _playerRepository.SaveChanges();
 
         return DtoMapper.ToDto(character);
     }
