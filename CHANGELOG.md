@@ -21,6 +21,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Initial EF Core mappings and migration for guild roster persistence.
 - EF-backed repositories for persistent guild roster storage.
 - Testcontainers-based PostgreSQL persistence integration tests.
+- Wired the Web app to use configurable PostgreSQL persistence in development.
 
 ### Changed
 

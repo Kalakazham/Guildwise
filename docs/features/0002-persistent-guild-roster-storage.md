@@ -563,6 +563,23 @@ Verify manually:
 - Restart the app.
 - Data is still available.
 
+Manual local verification steps:
+
+1. Start Docker Compose PostgreSQL.
+2. Apply migrations:
+
+   ```bash
+   dotnet tool run dotnet-ef database update \
+     --project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
+     --startup-project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
+     --context GuildwiseDbContext
+   ```
+
+3. Run `Guildwise.Web`.
+4. Create a guild, player, character and raid team through the verification UI.
+5. Stop and restart `Guildwise.Web`.
+6. Confirm the created roster data still exists.
+
 Suggested commit:
 
 ```text
