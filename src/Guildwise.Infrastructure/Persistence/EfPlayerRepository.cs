@@ -31,14 +31,7 @@ public sealed class EfPlayerRepository : IPlayerRepository
 
         if (mainCharacterId.HasValue)
         {
-            var mainCharacterProperty = _dbContext.Entry(player)
-                .Property(existing => existing.MainCharacterId);
-            mainCharacterProperty.CurrentValue = null;
-            await SaveChangesAsync(cancellationToken);
-
-            mainCharacterProperty.CurrentValue = mainCharacterId;
-            mainCharacterProperty.IsModified = true;
-            await SaveChangesAsync(cancellationToken);
+            await AddWithMainCharacterAsync(player, mainCharacterId.Value, cancellationToken);
             return;
         }
 
@@ -73,4 +66,44 @@ public sealed class EfPlayerRepository : IPlayerRepository
         => _dbContext.Players
             .Include(player => player.Characters)
             .AsSplitQuery();
+
+    private async Task AddWithMainCharacterAsync(
+        Player player,
+        Guid mainCharacterId,
+        CancellationToken cancellationToken)
+    {
+        if (_dbContext.Database.CurrentTransaction is not null)
+        {
+            await SaveWithMainCharacterWorkaroundAsync(player, mainCharacterId, cancellationToken);
+            return;
+        }
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            await SaveWithMainCharacterWorkaroundAsync(player, mainCharacterId, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    private async Task SaveWithMainCharacterWorkaroundAsync(
+        Player player,
+        Guid mainCharacterId,
+        CancellationToken cancellationToken)
+    {
+        var mainCharacterProperty = _dbContext.Entry(player)
+            .Property(existing => existing.MainCharacterId);
+        mainCharacterProperty.CurrentValue = null;
+        await SaveChangesAsync(cancellationToken);
+
+        mainCharacterProperty.CurrentValue = mainCharacterId;
+        mainCharacterProperty.IsModified = true;
+        await SaveChangesAsync(cancellationToken);
+    }
 }

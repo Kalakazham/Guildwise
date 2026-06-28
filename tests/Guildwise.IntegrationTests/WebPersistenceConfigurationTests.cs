@@ -153,6 +153,11 @@ public sealed class WebPersistenceConfigurationTests
             descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
                 && descriptor.ImplementationType == typeof(InMemoryPlayerRepository)
                 && descriptor.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(InMemoryTransactionRunner)
+                && descriptor.Lifetime == ServiceLifetime.Singleton);
     }
 
     private static void AssertPostgresRepositoriesRegistered(IServiceCollection services)
@@ -170,6 +175,11 @@ public sealed class WebPersistenceConfigurationTests
         Assert.Contains(
             services,
             descriptor => descriptor.ServiceType == typeof(DbContextOptions<GuildwiseDbContext>)
+                && descriptor.Lifetime == ServiceLifetime.Scoped);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(EfTransactionRunner)
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
     }
 }

@@ -488,6 +488,16 @@ public sealed class ApplicationUseCaseTests
     }
 
     [Fact]
+    public async Task DeletePlayer_When_Player_Is_Missing_Does_Not_Start_Transaction()
+    {
+        var context = new TestContext();
+
+        await context.DeletePlayerHandler.HandleAsync(new DeletePlayerCommand(Guid.NewGuid()));
+
+        Assert.Equal(0, context.TransactionRunner.ExecuteCalls);
+    }
+
+    [Fact]
     public async Task CreateGuild_With_Blank_Name_Returns_Validation()
     {
         var context = new TestContext();
@@ -1034,7 +1044,7 @@ public sealed class ApplicationUseCaseTests
             GetPlayerHandler = new GetPlayerHandler(PlayerRepository);
             ListPlayersHandler = new ListPlayersHandler(PlayerRepository);
             UpdatePlayerHandler = new UpdatePlayerHandler(PlayerRepository);
-            DeletePlayerHandler = new DeletePlayerHandler(GuildRepository, PlayerRepository);
+            DeletePlayerHandler = new DeletePlayerHandler(GuildRepository, PlayerRepository, TransactionRunner);
 
             CreateCharacterHandler = new CreateCharacterHandler(PlayerRepository);
             GetCharacterHandler = new GetCharacterHandler(PlayerRepository);
@@ -1060,6 +1070,8 @@ public sealed class ApplicationUseCaseTests
         public InMemoryGuildRepository GuildRepository { get; } = new();
 
         public InMemoryPlayerRepository PlayerRepository { get; } = new();
+
+        public RecordingTransactionRunner TransactionRunner { get; } = new();
 
         public CreateGuildHandler CreateGuildHandler { get; }
         public GetGuildHandler GetGuildHandler { get; }
@@ -1144,6 +1156,31 @@ public sealed class ApplicationUseCaseTests
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
             => Task.CompletedTask;
+    }
+
+    private sealed class RecordingTransactionRunner : ITransactionRunner
+    {
+        public int ExecuteCalls { get; private set; }
+
+        public async Task ExecuteAsync(
+            Func<CancellationToken, Task> operation,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+
+            ExecuteCalls++;
+            await operation(cancellationToken);
+        }
+
+        public async Task<T> ExecuteAsync<T>(
+            Func<CancellationToken, Task<T>> operation,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+
+            ExecuteCalls++;
+            return await operation(cancellationToken);
+        }
     }
 }
 

@@ -8,11 +8,16 @@ public sealed class DeletePlayerHandler
 {
     private readonly IGuildRepository _guildRepository;
     private readonly IPlayerRepository _playerRepository;
+    private readonly ITransactionRunner _transactionRunner;
 
-    public DeletePlayerHandler(IGuildRepository guildRepository, IPlayerRepository playerRepository)
+    public DeletePlayerHandler(
+        IGuildRepository guildRepository,
+        IPlayerRepository playerRepository,
+        ITransactionRunner transactionRunner)
     {
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
+        _transactionRunner = transactionRunner ?? throw new ArgumentNullException(nameof(transactionRunner));
     }
 
     public async Task<Result> HandleAsync(DeletePlayerCommand command, CancellationToken cancellationToken = default)
@@ -25,14 +30,18 @@ public sealed class DeletePlayerHandler
             return Result.NotFound($"Player '{command.PlayerId}' was not found.");
         }
 
-        var guilds = await _guildRepository.ListAsync(cancellationToken);
-        foreach (var guild in guilds)
+        await _transactionRunner.ExecuteAsync(async ct =>
         {
-            guild.RemoveMember(player.Id);
-        }
+            var guilds = await _guildRepository.ListAsync(ct);
+            foreach (var guild in guilds)
+            {
+                guild.RemoveMember(command.PlayerId);
+            }
 
-        await _guildRepository.SaveChangesAsync(cancellationToken);
-        await _playerRepository.RemoveAsync(command.PlayerId, cancellationToken);
+            await _guildRepository.SaveChangesAsync(ct);
+            await _playerRepository.RemoveAsync(command.PlayerId, ct);
+        }, cancellationToken);
+
         return Result.Success();
     }
 }

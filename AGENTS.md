@@ -200,6 +200,25 @@ AI agents must not add `Microsoft.EntityFrameworkCore.Design` to `Guildwise.Web`
 
 AI agents must use the Infrastructure design-time factory for EF Core migration commands.
 
+## Result Handling Rules
+
+* Command handlers should return `Result` or `Result<T>` for expected outcomes.
+* Query handlers may return `null` for missing single entities or empty collections for lists.
+* Do not use exceptions as normal control flow for expected command outcomes.
+* Do not catch broad exceptions and convert them into failures.
+* Keep `Result`, `Result<T>`, `Failure` and `FailureType` in Application.
+* Domain must not reference Application result types.
+* Technical failures may still throw.
+
+## Transaction Boundary Rules
+
+* Use `ITransactionRunner` for Application-level multi-aggregate persistence operations.
+* Keep EF transaction APIs in Infrastructure.
+* Do not introduce EF references into Application.
+* Do not start transactions for expected pre-check failures such as `NotFound`.
+* Technical exceptions inside transactions should roll back and rethrow.
+* Do not redesign into a large UnitOfWork abstraction unless explicitly requested.
+
 ## Testing Rules
 
 - Add or update tests for meaningful domain or application behavior.
