@@ -19,6 +19,7 @@ public sealed class UpdatePlayerHandler
 
         var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
         player.Rename(command.DisplayName);
+        _playerRepository.SaveChanges();
         return DtoMapper.ToDto(player);
     }
 }

@@ -22,6 +22,7 @@ public sealed class AddPlayerToGuildHandler
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
         var member = guild.AddMember(player, command.Rank);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(member);
     }
 }

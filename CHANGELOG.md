@@ -17,6 +17,11 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Application use case handlers for manual guild roster setup.
 - Temporary in-memory storage for guild and player aggregate roots.
 - Minimal Blazor verification UI for manual guild roster setup.
+- EF Core PostgreSQL persistence foundation.
+- Initial EF Core mappings and migration for guild roster persistence.
+- EF-backed repositories for persistent guild roster storage.
+- Testcontainers-based PostgreSQL persistence integration tests.
+- Wired the Web app to use configurable PostgreSQL persistence in development.
 
 ### Changed
 

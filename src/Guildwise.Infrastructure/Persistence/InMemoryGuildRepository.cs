@@ -41,4 +41,8 @@ public sealed class InMemoryGuildRepository : IGuildRepository
             _guilds.Remove(id);
         }
     }
+
+    public void SaveChanges()
+    {
+    }
 }

@@ -19,6 +19,7 @@ public sealed class CreateRaidTeamHandler
 
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         var raidTeam = guild.CreateRaidTeam(command.Name);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(raidTeam);
     }
 }

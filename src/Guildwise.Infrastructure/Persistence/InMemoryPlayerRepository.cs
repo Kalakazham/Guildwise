@@ -41,4 +41,8 @@ public sealed class InMemoryPlayerRepository : IPlayerRepository
             _players.Remove(id);
         }
     }
+
+    public void SaveChanges()
+    {
+    }
 }

@@ -20,6 +20,7 @@ public sealed class UpdateRaidTeamHandler
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         var raidTeam = guild.GetRaidTeamOrThrow(command.RaidTeamId);
         guild.RenameRaidTeam(raidTeam, command.Name);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(raidTeam);
     }
 }

@@ -93,7 +93,26 @@ public sealed class InMemoryStorageTests
     }
 
     [Fact]
-    public void AddInfrastructure_Registers_InMemory_Aggregate_Root_Repositories()
+    public void AddInMemoryInfrastructure_Registers_InMemory_Aggregate_Root_Repositories()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInMemoryInfrastructure();
+
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IGuildRepository)
+                && descriptor.ImplementationType == typeof(InMemoryGuildRepository)
+                && descriptor.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
+                && descriptor.ImplementationType == typeof(InMemoryPlayerRepository)
+                && descriptor.Lifetime == ServiceLifetime.Singleton);
+    }
+
+    [Fact]
+    public void AddInfrastructure_Keeps_InMemory_Registration_As_Current_Default()
     {
         var services = new ServiceCollection();
 

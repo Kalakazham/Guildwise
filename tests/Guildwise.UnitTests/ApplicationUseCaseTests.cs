@@ -381,6 +381,10 @@ public sealed class ApplicationUseCaseTests
 
         public void Remove(Guid id)
             => _guilds.Remove(id);
+
+        public void SaveChanges()
+        {
+        }
     }
 
     private sealed class InMemoryPlayerRepository : IPlayerRepository
@@ -398,5 +402,9 @@ public sealed class ApplicationUseCaseTests
 
         public void Remove(Guid id)
             => _players.Remove(id);
+
+        public void SaveChanges()
+        {
+        }
     }
 }

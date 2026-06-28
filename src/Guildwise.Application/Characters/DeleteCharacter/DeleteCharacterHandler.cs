@@ -19,5 +19,6 @@ public sealed class DeleteCharacterHandler
         var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
         player.GetCharacterOrThrow(command.CharacterId);
         player.RemoveCharacter(command.CharacterId);
+        _playerRepository.SaveChanges();
     }
 }

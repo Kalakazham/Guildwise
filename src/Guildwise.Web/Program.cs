@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddGuildwiseApplicationUseCases();
-builder.Services.AddInfrastructure();
+AddConfiguredInfrastructure(builder);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -30,3 +30,24 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+static void AddConfiguredInfrastructure(WebApplicationBuilder builder)
+{
+    var persistenceProvider = builder.Configuration["Guildwise:PersistenceProvider"];
+
+    if (string.IsNullOrWhiteSpace(persistenceProvider)
+        || string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase))
+    {
+        builder.Services.AddInMemoryInfrastructure();
+        return;
+    }
+
+    if (string.Equals(persistenceProvider, "Postgres", StringComparison.OrdinalIgnoreCase))
+    {
+        builder.Services.AddPostgresInfrastructure(builder.Configuration);
+        return;
+    }
+
+    throw new InvalidOperationException(
+        "Configuration value 'Guildwise:PersistenceProvider' must be either 'InMemory' or 'Postgres'.");
+}

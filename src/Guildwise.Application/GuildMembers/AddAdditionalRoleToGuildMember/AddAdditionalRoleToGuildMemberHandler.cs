@@ -20,6 +20,7 @@ public sealed class AddAdditionalRoleToGuildMemberHandler
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         var member = guild.GetGuildMemberOrThrow(command.PlayerId);
         member.AddAdditionalRole(command.Role);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(member);
     }
 }

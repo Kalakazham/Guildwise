@@ -26,6 +26,7 @@ public sealed class UpdateCharacterHandler
             command.CharacterClass,
             command.Specialization,
             command.Role);
+        _playerRepository.SaveChanges();
 
         return DtoMapper.ToDto(player.GetCharacterOrThrow(command.CharacterId));
     }

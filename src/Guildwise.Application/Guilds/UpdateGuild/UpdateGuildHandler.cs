@@ -19,6 +19,7 @@ public sealed class UpdateGuildHandler
 
         var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
         guild.Update(command.Name, command.Region, command.Realm);
+        _guildRepository.SaveChanges();
         return DtoMapper.ToDto(guild);
     }
 }

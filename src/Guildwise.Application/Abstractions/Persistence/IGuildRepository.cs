@@ -11,4 +11,6 @@ public interface IGuildRepository
     void Add(Guild guild);
 
     void Remove(Guid id);
+
+    void SaveChanges();
 }

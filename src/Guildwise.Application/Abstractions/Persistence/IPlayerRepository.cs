@@ -11,4 +11,6 @@ public interface IPlayerRepository
     void Add(Player player);
 
     void Remove(Guid id);
+
+    void SaveChanges();
 }

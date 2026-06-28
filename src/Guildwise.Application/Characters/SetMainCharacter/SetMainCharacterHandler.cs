@@ -20,6 +20,7 @@ public sealed class SetMainCharacterHandler
         var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
         var character = player.GetCharacterOrThrow(command.CharacterId);
         player.SetMainCharacter(character);
+        _playerRepository.SaveChanges();
         return DtoMapper.ToDto(player);
     }
 }
