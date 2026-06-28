@@ -2,16 +2,27 @@ using Guildwise.Application.Abstractions.Persistence;
 using Guildwise.Domain;
 using Guildwise.Infrastructure;
 using Guildwise.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using Guildwise.IntegrationTests.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Guildwise.IntegrationTests;
 
-public sealed class EfRepositoryTests
+[Collection(PostgreSqlTestCollection.Name)]
+public sealed class EfRepositoryTests : IAsyncLifetime
 {
-    private const string ConnectionString =
-        "Host=localhost;Port=55432;Database=guildwise;Username=guildwise;Password=guildwise";
+    private readonly PostgreSqlTestFixture _fixture;
+
+    public EfRepositoryTests(PostgreSqlTestFixture fixture)
+    {
+        _fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
+    }
+
+    public Task InitializeAsync()
+        => _fixture.ResetDatabaseAsync();
+
+    public Task DisposeAsync()
+        => Task.CompletedTask;
 
     [Fact]
     public void AddPostgresInfrastructure_Registers_Ef_Aggregate_Root_Repositories()
@@ -19,7 +30,7 @@ public sealed class EfRepositoryTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:GuildwiseDatabase"] = ConnectionString
+                ["ConnectionStrings:GuildwiseDatabase"] = _fixture.ConnectionString
             })
             .Build();
         var services = new ServiceCollection();
@@ -41,16 +52,15 @@ public sealed class EfRepositoryTests
     [Fact]
     public void EfPlayerRepository_Saves_And_Loads_Player()
     {
-        EnsureDatabaseMigrated();
         var displayName = UniqueName("Player");
         var player = Player.Create(displayName);
 
-        using (var arrangeContext = CreateDbContext())
+        using (var arrangeContext = _fixture.CreateDbContext())
         {
             new EfPlayerRepository(arrangeContext).Add(player);
         }
 
-        using var assertContext = CreateDbContext();
+        using var assertContext = _fixture.CreateDbContext();
         var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
 
         Assert.NotNull(loaded);
@@ -62,7 +72,6 @@ public sealed class EfRepositoryTests
     [Fact]
     public void EfPlayerRepository_Saves_And_Loads_Player_With_Characters_And_MainCharacter()
     {
-        EnsureDatabaseMigrated();
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
             UniqueName("Alysa"),
@@ -73,12 +82,12 @@ public sealed class EfRepositoryTests
             CharacterRole.Damage);
         player.SetMainCharacter(character);
 
-        using (var arrangeContext = CreateDbContext())
+        using (var arrangeContext = _fixture.CreateDbContext())
         {
             new EfPlayerRepository(arrangeContext).Add(player);
         }
 
-        using var assertContext = CreateDbContext();
+        using var assertContext = _fixture.CreateDbContext();
         var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
 
         Assert.NotNull(loaded);
@@ -93,15 +102,14 @@ public sealed class EfRepositoryTests
     [Fact]
     public void EfGuildRepository_Saves_And_Loads_Guild()
     {
-        EnsureDatabaseMigrated();
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
 
-        using (var arrangeContext = CreateDbContext())
+        using (var arrangeContext = _fixture.CreateDbContext())
         {
             new EfGuildRepository(arrangeContext).Add(guild);
         }
 
-        using var assertContext = CreateDbContext();
+        using var assertContext = _fixture.CreateDbContext();
         var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
 
         Assert.NotNull(loaded);
@@ -115,7 +123,6 @@ public sealed class EfRepositoryTests
     [Fact]
     public void EfGuildRepository_Saves_And_Loads_Guild_Members_RaidTeams_And_RaidTeamMembers()
     {
-        EnsureDatabaseMigrated();
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
             UniqueName("Alysa"),
@@ -132,17 +139,17 @@ public sealed class EfRepositoryTests
         var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
         guild.AddPlayerToRaidTeam(raidTeam, player);
 
-        using (var playerContext = CreateDbContext())
+        using (var playerContext = _fixture.CreateDbContext())
         {
             new EfPlayerRepository(playerContext).Add(player);
         }
 
-        using (var guildContext = CreateDbContext())
+        using (var guildContext = _fixture.CreateDbContext())
         {
             new EfGuildRepository(guildContext).Add(guild);
         }
 
-        using var assertContext = CreateDbContext();
+        using var assertContext = _fixture.CreateDbContext();
         var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
 
         Assert.NotNull(loaded);
@@ -157,22 +164,6 @@ public sealed class EfRepositoryTests
         Assert.Equal(raidTeam.Name, loadedRaidTeam.Name);
         var loadedRaidTeamMember = Assert.Single(loadedRaidTeam.Members);
         Assert.Equal(player.Id, loadedRaidTeamMember.PlayerId);
-    }
-
-    private static GuildwiseDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<GuildwiseDbContext>()
-            .UseNpgsql(ConnectionString)
-            .Options;
-
-        return new GuildwiseDbContext(options);
-    }
-
-    private static void EnsureDatabaseMigrated()
-    {
-        using var context = CreateDbContext();
-
-        context.Database.Migrate();
     }
 
     private static string UniqueName(string prefix)
