@@ -29,7 +29,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Fixed
 
-## [0.1.0] - TBD
+## [0.2.0] - 2026-06-28
 
 ### Added
 
