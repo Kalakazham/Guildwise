@@ -231,6 +231,123 @@ AddAttendanceTracking
 AddLootWishlist
 ```
 
+## EF Core Tooling Strategy
+
+Guildwise uses an Infrastructure design-time DbContext factory for EF Core tooling.
+
+The factory is located in Infrastructure:
+
+```text
+src/Guildwise.Infrastructure/Persistence/GuildwiseDbContextFactory.cs
+```
+
+This allows EF Core migration commands to run without using `Guildwise.Web` as the startup project.
+
+This keeps EF Core design-time tooling out of the Web project.
+
+## Design-Time Factory
+
+The design-time factory creates `GuildwiseDbContext` for EF Core tooling.
+
+It should first check this environment variable:
+
+```text
+GUILDWISE_CONNECTION_STRING
+```
+
+If the environment variable is not set, the factory may use a local development fallback connection string.
+
+Current local development fallback connection string:
+
+```text
+Host=localhost;Port=55432;Database=guildwise;Username=guildwise;Password=guildwise
+```
+
+The local Docker setup intentionally maps PostgreSQL like this:
+
+```text
+55432:5432
+```
+
+Meaning:
+
+```text
+Host/Rider/.NET app: localhost:55432
+Docker container:    postgres:5432
+```
+
+The host port `55432` is used to avoid conflicts with other local PostgreSQL installations or stale port mappings on the default PostgreSQL port `5432`.
+
+## Migration Commands
+
+Migration commands should use the Infrastructure project as both the migration project and the startup project.
+
+Example migration command:
+
+```bash
+dotnet tool run dotnet-ef migrations add InitialGuildRosterPersistence \
+  --project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
+  --startup-project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
+  --context GuildwiseDbContext \
+  --output-dir Persistence/Migrations
+```
+
+Example database update command:
+
+```bash
+dotnet tool run dotnet-ef database update \
+  --project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
+  --startup-project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
+  --context GuildwiseDbContext
+```
+
+## Rules
+
+* Do not add `Microsoft.EntityFrameworkCore.Design` to `Guildwise.Web` just to satisfy EF Core tooling.
+* Keep EF Core design-time tooling in `Guildwise.Infrastructure`.
+* Do not use `Guildwise.Web` as the EF tooling startup project unless explicitly instructed.
+* Keep migrations in Infrastructure.
+* Migration files must be committed to Git.
+* The EF Core model snapshot must be committed to Git.
+* Do not manually edit the EF migration history table.
+* Do not delete or rewrite committed migrations unless explicitly instructed.
+* Do not generate migrations into Domain, Application or Web.
+* Do not change the local PostgreSQL host port back to `5432` unless explicitly instructed.
+
+## Rider Database Connection
+
+For Rider database tooling, use:
+
+```text
+Host:      127.0.0.1
+Port:      55432
+Database:  guildwise
+User:      guildwise
+Password:  guildwise
+```
+
+Or use this JDBC URL:
+
+```text
+jdbc:postgresql://127.0.0.1:55432/guildwise?user=guildwise&password=guildwise&sslmode=disable
+```
+
+## Consequences
+
+### Positive
+
+* EF Core tooling does not require EF design-time packages in the Web project.
+* Persistence tooling remains owned by Infrastructure.
+* Migration commands are explicit and repeatable.
+* The local PostgreSQL port avoids conflicts with other local PostgreSQL instances.
+* The design-time factory can be configured through an environment variable for CI or non-local environments.
+
+### Negative
+
+* EF Core commands are longer because both `--project` and `--startup-project` point to Infrastructure.
+* Developers must remember that the host port is `55432`, not `5432`.
+* Documentation and prompts must consistently use the Infrastructure design-time factory approach.
+
 ## Local Development Database
 
 Guildwise will use PostgreSQL locally.

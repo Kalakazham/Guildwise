@@ -6,7 +6,7 @@ namespace Guildwise.Infrastructure.Persistence;
 public sealed class GuildwiseDbContextFactory : IDesignTimeDbContextFactory<GuildwiseDbContext>
 {
     private const string LocalDevelopmentConnectionString =
-        "Host=localhost;Port=5432;Database=guildwise;Username=guildwise;Password=guildwise";
+        "Host=localhost;Port=55432;Database=guildwise;Username=guildwise;Password=guildwise";
 
     public GuildwiseDbContext CreateDbContext(string[] args)
     {
