@@ -14,12 +14,14 @@ public sealed class CreateGuildHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public GuildDto Handle(CreateGuildCommand command)
+    public async Task<GuildDto> HandleAsync(
+        CreateGuildCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
         var guild = Guild.Create(command.Name, command.Region, command.Realm);
-        _guildRepository.Add(guild);
+        await _guildRepository.AddAsync(guild, cancellationToken);
         return DtoMapper.ToDto(guild);
     }
 }

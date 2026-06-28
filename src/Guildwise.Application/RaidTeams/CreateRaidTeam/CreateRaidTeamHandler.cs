@@ -13,13 +13,15 @@ public sealed class CreateRaidTeamHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public RaidTeamDto Handle(CreateRaidTeamCommand command)
+    public async Task<RaidTeamDto> HandleAsync(
+        CreateRaidTeamCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
         var raidTeam = guild.CreateRaidTeam(command.Name);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(raidTeam);
     }
 }

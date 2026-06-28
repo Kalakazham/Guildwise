@@ -13,37 +13,37 @@ public sealed class EfGuildRepository : IGuildRepository
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
 
-    public Guild? GetById(Guid id)
+    public Task<Guild?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => GuildsWithRoster()
-            .SingleOrDefault(guild => guild.Id == id);
+            .SingleOrDefaultAsync(guild => guild.Id == id, cancellationToken);
 
-    public IReadOnlyCollection<Guild> List()
-        => GuildsWithRoster()
+    public async Task<IReadOnlyCollection<Guild>> ListAsync(CancellationToken cancellationToken = default)
+        => await GuildsWithRoster()
             .OrderBy(guild => guild.Name)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-    public void Add(Guild guild)
+    public async Task AddAsync(Guild guild, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(guild);
 
-        _dbContext.Guilds.Add(guild);
-        SaveChanges();
+        await _dbContext.Guilds.AddAsync(guild, cancellationToken);
+        await SaveChangesAsync(cancellationToken);
     }
 
-    public void Remove(Guid id)
+    public async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var guild = GetById(id);
+        var guild = await GetByIdAsync(id, cancellationToken);
         if (guild is null)
         {
             return;
         }
 
         _dbContext.Guilds.Remove(guild);
-        SaveChanges();
+        await SaveChangesAsync(cancellationToken);
     }
 
-    public void SaveChanges()
-        => _dbContext.SaveChanges();
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        => _dbContext.SaveChangesAsync(cancellationToken);
 
     private IQueryable<Guild> GuildsWithRoster()
         => _dbContext.Guilds

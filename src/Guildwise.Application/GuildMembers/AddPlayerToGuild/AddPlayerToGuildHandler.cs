@@ -15,14 +15,16 @@ public sealed class AddPlayerToGuildHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public GuildMemberDto Handle(AddPlayerToGuildCommand command)
+    public async Task<GuildMemberDto> HandleAsync(
+        AddPlayerToGuildCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
+        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
         var member = guild.AddMember(player, command.Rank);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(member);
     }
 }

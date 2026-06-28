@@ -13,14 +13,16 @@ public sealed class RemoveAdditionalRoleFromGuildMemberHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public GuildMemberDto Handle(RemoveAdditionalRoleFromGuildMemberCommand command)
+    public async Task<GuildMemberDto> HandleAsync(
+        RemoveAdditionalRoleFromGuildMemberCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
         var member = guild.GetGuildMemberOrThrow(command.PlayerId);
         member.RemoveAdditionalRole(command.Role);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(member);
     }
 }

@@ -5,11 +5,19 @@ namespace Guildwise.Application.Common;
 
 internal static class EntityLookup
 {
-    internal static Guild GetGuildOrThrow(this IGuildRepository repository, Guid guildId)
-        => repository.GetById(guildId) ?? throw new NotFoundException(nameof(Guild), guildId);
+    internal static async Task<Guild> GetGuildOrThrowAsync(
+        this IGuildRepository repository,
+        Guid guildId,
+        CancellationToken cancellationToken = default)
+        => await repository.GetByIdAsync(guildId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Guild), guildId);
 
-    internal static Player GetPlayerOrThrow(this IPlayerRepository repository, Guid playerId)
-        => repository.GetById(playerId) ?? throw new NotFoundException(nameof(Player), playerId);
+    internal static async Task<Player> GetPlayerOrThrowAsync(
+        this IPlayerRepository repository,
+        Guid playerId,
+        CancellationToken cancellationToken = default)
+        => await repository.GetByIdAsync(playerId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Player), playerId);
 
     internal static RaidTeam GetRaidTeamOrThrow(this Guild guild, Guid raidTeamId)
         => guild.RaidTeams.FirstOrDefault(raidTeam => raidTeam.Id == raidTeamId)

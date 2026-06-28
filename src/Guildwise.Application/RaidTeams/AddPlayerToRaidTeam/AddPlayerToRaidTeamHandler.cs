@@ -15,15 +15,17 @@ public sealed class AddPlayerToRaidTeamHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public RaidTeamDto Handle(AddPlayerToRaidTeamCommand command)
+    public async Task<RaidTeamDto> HandleAsync(
+        AddPlayerToRaidTeamCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
         var raidTeam = guild.GetRaidTeamOrThrow(command.RaidTeamId);
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
         guild.AddPlayerToRaidTeam(raidTeam, player);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(raidTeam);
     }
 }

@@ -13,10 +13,13 @@ public sealed class ListPlayersHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public IReadOnlyList<PlayerDto> Handle(ListPlayersQuery query)
+    public async Task<IReadOnlyList<PlayerDto>> HandleAsync(
+        ListPlayersQuery query,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return _playerRepository.List().Select(DtoMapper.ToDto).ToList();
+        var players = await _playerRepository.ListAsync(cancellationToken);
+        return players.Select(DtoMapper.ToDto).ToList();
     }
 }

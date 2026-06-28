@@ -12,13 +12,13 @@ public sealed class DeleteCharacterHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public void Handle(DeleteCharacterCommand command)
+    public async Task HandleAsync(DeleteCharacterCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
         player.GetCharacterOrThrow(command.CharacterId);
         player.RemoveCharacter(command.CharacterId);
-        _playerRepository.SaveChanges();
+        await _playerRepository.SaveChangesAsync(cancellationToken);
     }
 }

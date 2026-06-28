@@ -50,18 +50,18 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfPlayerRepository_Saves_And_Loads_Player()
+    public async Task EfPlayerRepository_Saves_And_Loads_Player()
     {
         var displayName = UniqueName("Player");
         var player = Player.Create(displayName);
 
         using (var arrangeContext = _fixture.CreateDbContext())
         {
-            new EfPlayerRepository(arrangeContext).Add(player);
+            await new EfPlayerRepository(arrangeContext).AddAsync(player);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal(displayName, loaded.DisplayName);
@@ -70,7 +70,7 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfPlayerRepository_Saves_And_Loads_Player_With_Characters_And_MainCharacter()
+    public async Task EfPlayerRepository_Saves_And_Loads_Player_With_Characters_And_MainCharacter()
     {
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
@@ -84,11 +84,11 @@ public sealed class EfRepositoryTests : IAsyncLifetime
 
         using (var arrangeContext = _fixture.CreateDbContext())
         {
-            new EfPlayerRepository(arrangeContext).Add(player);
+            await new EfPlayerRepository(arrangeContext).AddAsync(player);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal(character.Id, loaded.MainCharacterId);
@@ -100,17 +100,17 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfGuildRepository_Saves_And_Loads_Guild()
+    public async Task EfGuildRepository_Saves_And_Loads_Guild()
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
 
         using (var arrangeContext = _fixture.CreateDbContext())
         {
-            new EfGuildRepository(arrangeContext).Add(guild);
+            await new EfGuildRepository(arrangeContext).AddAsync(guild);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
 
         Assert.NotNull(loaded);
         Assert.Equal(guild.Name, loaded.Name);
@@ -121,7 +121,7 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public void EfGuildRepository_Saves_And_Loads_Guild_Members_RaidTeams_And_RaidTeamMembers()
+    public async Task EfGuildRepository_Saves_And_Loads_Guild_Members_RaidTeams_And_RaidTeamMembers()
     {
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
@@ -141,16 +141,16 @@ public sealed class EfRepositoryTests : IAsyncLifetime
 
         using (var playerContext = _fixture.CreateDbContext())
         {
-            new EfPlayerRepository(playerContext).Add(player);
+            await new EfPlayerRepository(playerContext).AddAsync(player);
         }
 
         using (var guildContext = _fixture.CreateDbContext())
         {
-            new EfGuildRepository(guildContext).Add(guild);
+            await new EfGuildRepository(guildContext).AddAsync(guild);
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
 
         Assert.NotNull(loaded);
         var loadedMember = Assert.Single(loaded.Members);

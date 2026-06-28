@@ -180,7 +180,7 @@
     <section class="roster-section">
         <div class="section-heading">
             <h2>Roster list</h2>
-            <button type="button" class="secondary-action" @onclick="RefreshData">Refresh</button>
+            <button type="button" class="secondary-action" @onclick="RefreshDataAsync">Refresh</button>
         </div>
 
         @if (guilds.Count == 0)
@@ -262,38 +262,38 @@
     private string? statusMessage;
     private string statusKind = "info";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        RefreshData();
+        await RefreshDataAsync();
     }
 
-    private void CreateGuild()
+    private async Task CreateGuild()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
-            var guild = CreateGuildHandler.Handle(new CreateGuildCommand(guildName, guildRegion, guildRealm));
+            var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand(guildName, guildRegion, guildRealm));
             selectedGuildId = guild.Id.ToString();
             statusMessage = $"Created guild {guild.Name}.";
         });
     }
 
-    private void CreatePlayer()
+    private async Task CreatePlayer()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
-            var player = CreatePlayerHandler.Handle(new CreatePlayerCommand(playerName));
+            var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand(playerName));
             selectedPlayerId = player.Id.ToString();
             statusMessage = $"Created player {player.DisplayName}.";
         });
     }
 
-    private void CreateCharacter()
+    private async Task CreateCharacter()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
             var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
             var preset = characterPresets.Single(existing => existing.Name == selectedCharacterPresetName);
-            var character = CreateCharacterHandler.Handle(new CreateCharacterCommand(
+            var character = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 playerId,
                 characterName,
                 characterRegion,
@@ -302,55 +302,55 @@
                 preset.Specialization,
                 preset.Role));
 
-            SetMainCharacterHandler.Handle(new SetMainCharacterCommand(playerId, character.Id));
+            await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(playerId, character.Id));
             statusMessage = $"Created {character.Name} and set it as main.";
         });
     }
 
-    private void CreateRaidTeam()
+    private async Task CreateRaidTeam()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
             var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
-            var raidTeam = CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guildId, raidTeamName));
+            var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guildId, raidTeamName));
             selectedRaidTeamId = raidTeam.Id.ToString();
             statusMessage = $"Created raid team {raidTeam.Name}.";
         });
     }
 
-    private void AddPlayerToGuild()
+    private async Task AddPlayerToGuild()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
             var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
             var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
 
-            AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member));
+            await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member));
             statusMessage = "Added player to guild.";
         });
     }
 
-    private void AddPlayerToRaidTeam()
+    private async Task AddPlayerToRaidTeam()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
             var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
             var raidTeamId = RequireGuid(selectedRaidTeamId, "Select a raid team first.");
             var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
 
-            AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId));
+            await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId));
             statusMessage = "Added player to raid team.";
         });
     }
 
-    private void SeedSampleRoster()
+    private async Task SeedSampleRoster()
     {
-        RunAction(() =>
+        await RunActionAsync(async () =>
         {
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            var guild = CreateGuildHandler.Handle(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
-            var player = CreatePlayerHandler.Handle(new CreatePlayerCommand($"Myrmi {suffix}"));
-            var character = CreateCharacterHandler.Handle(new CreateCharacterCommand(
+            var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
+            var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand($"Myrmi {suffix}"));
+            var character = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 $"Alysa{suffix[^4..]}",
                 "EU",
@@ -359,10 +359,10 @@
                 CharacterSpecialization.PaladinRetribution,
                 CharacterRole.Damage));
 
-            SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
-            var raidTeam = CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guild.Id, "Team One"));
-            AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
-            AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+            await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+            var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+            await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
 
             selectedGuildId = guild.Id.ToString();
             selectedPlayerId = player.Id.ToString();
@@ -371,11 +371,11 @@
         });
     }
 
-    private void RunAction(Action action)
+    private async Task RunActionAsync(Func<Task> action)
     {
         try
         {
-            action();
+            await action();
             statusKind = "success";
         }
         catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
@@ -384,13 +384,13 @@
             statusKind = "error";
         }
 
-        RefreshData();
+        await RefreshDataAsync();
     }
 
-    private void RefreshData()
+    private async Task RefreshDataAsync()
     {
-        guilds = ListGuildsHandler.Handle(new ListGuildsQuery()).ToList();
-        players = ListPlayersHandler.Handle(new ListPlayersQuery()).ToList();
+        guilds = (await ListGuildsHandler.HandleAsync(new ListGuildsQuery())).ToList();
+        players = (await ListPlayersHandler.HandleAsync(new ListPlayersQuery())).ToList();
 
         if (!Guid.TryParse(selectedGuildId, out var guildId) || guilds.All(guild => guild.Id != guildId))
         {
@@ -400,7 +400,7 @@
 
         raidTeams = guildId == Guid.Empty
             ? []
-            : ListRaidTeamsForGuildHandler.Handle(new ListRaidTeamsForGuildQuery(guildId)).ToList();
+            : (await ListRaidTeamsForGuildHandler.HandleAsync(new ListRaidTeamsForGuildQuery(guildId))).ToList();
 
         if (!Guid.TryParse(selectedPlayerId, out _) && players.Count > 0)
         {

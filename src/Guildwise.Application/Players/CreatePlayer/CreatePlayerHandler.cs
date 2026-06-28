@@ -14,12 +14,14 @@ public sealed class CreatePlayerHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public PlayerDto Handle(CreatePlayerCommand command)
+    public async Task<PlayerDto> HandleAsync(
+        CreatePlayerCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
         var player = Player.Create(command.DisplayName);
-        _playerRepository.Add(player);
+        await _playerRepository.AddAsync(player, cancellationToken);
         return DtoMapper.ToDto(player);
     }
 }
