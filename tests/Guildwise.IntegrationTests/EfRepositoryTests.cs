@@ -47,6 +47,34 @@ public sealed class EfRepositoryTests : IAsyncLifetime
             descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
                 && descriptor.ImplementationType == typeof(EfPlayerRepository)
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(EfTransactionRunner)
+                && descriptor.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Fact]
+    public async Task EfTransactionRunner_Rolls_Back_When_Operation_Throws()
+    {
+        var guildName = UniqueName("Guild");
+
+        using (var actContext = _fixture.CreateDbContext())
+        {
+            var transactionRunner = new EfTransactionRunner(actContext);
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                transactionRunner.ExecuteAsync(async cancellationToken =>
+                {
+                    await actContext.Guilds.AddAsync(Guild.Create(guildName, "EU", "Draenor"), cancellationToken);
+                    await actContext.SaveChangesAsync(cancellationToken);
+                    throw new InvalidOperationException("Forced transaction failure.");
+                }));
+
+            Assert.Equal("Forced transaction failure.", exception.Message);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        Assert.Empty(assertContext.Guilds.Where(guild => guild.Name == guildName));
     }
 
     [Fact]
