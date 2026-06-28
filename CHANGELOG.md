@@ -12,6 +12,8 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Changed
 
+- Made non-development persistence configuration fail fast for missing or unsafe settings.
+
 ### Fixed
 
 ## [0.2.0] - 2026-06-28

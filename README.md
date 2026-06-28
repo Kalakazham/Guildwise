@@ -100,6 +100,19 @@ dotnet run --project ./src/Guildwise.Web/Guildwise.Web.csproj
 
 PostgreSQL must be running and migrations must be applied before using the persistent Web workflow.
 
+## Runtime Persistence Configuration
+
+Development may use local PostgreSQL or explicitly configured `InMemory` persistence. If `Guildwise:PersistenceProvider` is missing in Development, Guildwise falls back to `InMemory` for quick local experiments.
+
+Non-Development environments must explicitly configure safe persistence:
+
+- `Guildwise:PersistenceProvider` is required.
+- `InMemory` is not allowed.
+- `Postgres` requires a non-empty `ConnectionStrings:GuildwiseDatabase` value.
+- Production secrets must come from environment or deployment configuration, not committed files.
+
+The Web app does not run EF Core migrations automatically in any environment.
+
 ## Manual Persistence Verification
 
 1. Start Docker Compose PostgreSQL with `docker compose up -d`.
