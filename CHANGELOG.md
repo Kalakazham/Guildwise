@@ -8,6 +8,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Developer setup documentation for local PostgreSQL, migrations, Web startup and tests.
+
+### Changed
+
+### Fixed
+
+## [0.2.0] - 2026-06-28
+
+### Added
+
 - Initial modular monolith solution structure.
 - Project guardrails for AI-assisted development.
 - Architecture documentation and ADRs.
@@ -28,9 +38,3 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Refactored the Application layer from a single roster application service into explicit use case handlers.
 
 ### Fixed
-
-## [0.2.0] - 2026-06-28
-
-### Added
-
-- Planned: Manual guild, raid team and roster dashboard.
