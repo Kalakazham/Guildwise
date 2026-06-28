@@ -8,8 +8,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
-- Added Application result primitives for expected use-case outcomes.
-- Added tests for expected Application result failure outcomes.
+### Changed
+
+### Fixed
+
+## [0.3.0] - 2026-06-28
+
+### Added
+
+- Application result primitives for expected use-case outcomes.
+- Tests for expected Application result failure outcomes.
 - Developer setup documentation for local PostgreSQL, migrations, Web startup and tests.
 - GitHub Actions CI for restore, build and tests.
 - Repository line-ending normalization rules.
