@@ -20,6 +20,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Improved Web feedback for expected Application result failures.
 - Made non-development persistence configuration fail fast for missing or unsafe settings.
 - Made player deletion persistence atomic across guild and player changes.
+- Made player main-character persistence transactional during insert.
 - Refactored core roster command handlers to return structured Application results for expected outcomes.
 - Refactored remaining roster command handlers to return structured Application results.
 - Refactored persistence-facing repositories and use case handlers to async APIs.
