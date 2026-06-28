@@ -8,13 +8,18 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Added Application result primitives for expected use-case outcomes.
+- Added tests for expected Application result failure outcomes.
 - Developer setup documentation for local PostgreSQL, migrations, Web startup and tests.
 - GitHub Actions CI for restore, build and tests.
 - Repository line-ending normalization rules.
 
 ### Changed
 
+- Improved Web feedback for expected Application result failures.
 - Made non-development persistence configuration fail fast for missing or unsafe settings.
+- Refactored core roster command handlers to return structured Application results for expected outcomes.
+- Refactored remaining roster command handlers to return structured Application results.
 - Refactored persistence-facing repositories and use case handlers to async APIs.
 
 ### Fixed
