@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 - Added Application result primitives for expected use-case outcomes.
 - Added tests for expected Application result failure outcomes.
+- Architecture documentation for Application result handling and transaction boundaries.
 - Developer setup documentation for local PostgreSQL, migrations, Web startup and tests.
 - GitHub Actions CI for restore, build and tests.
 - Persistence transaction runner abstraction with EF and in-memory implementations.

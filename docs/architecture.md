@@ -177,6 +177,14 @@ Guildwise.ArchitectureTests
 * Repository interfaces belong in Application.
 * Repository implementations belong in Infrastructure.
 
+## Application Result Handling
+
+Command handlers return `Result` or `Result<T>` for expected use-case outcomes. Expected failures use `Failure` and `FailureType` values such as `NotFound`, `Validation`, `Conflict` and `BusinessRule`.
+
+Query handlers may return nullable DTOs for missing single entities and empty collections for lists.
+
+Technical failures may still throw exceptions. Domain does not reference Application result types. Web consumes Application results and displays expected failures to users.
+
 ## Persistence
 
 Guildwise uses PostgreSQL with EF Core for persistent storage.
@@ -255,6 +263,14 @@ Rules:
 * Do not manually edit the EF migration history table.
 * Do not delete or rewrite committed migrations unless explicitly instructed.
 * Do not generate migrations into Domain, Application or Web.
+
+### Transaction Boundaries
+
+`ITransactionRunner` is an Application abstraction for Application-level multi-aggregate persistence flows.
+
+`EfTransactionRunner` and `InMemoryTransactionRunner` live in Infrastructure. EF transaction APIs must remain in Infrastructure.
+
+Repository-internal two-save EF workarounds may use EF transactions internally. Expected `Result` failures should generally be returned before transactional persistence work begins.
 
 ## First Vertical Slice
 
