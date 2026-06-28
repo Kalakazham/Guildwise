@@ -13,14 +13,16 @@ public sealed class SetMainCharacterHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public PlayerDto Handle(SetMainCharacterCommand command)
+    public async Task<PlayerDto> HandleAsync(
+        SetMainCharacterCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
         var character = player.GetCharacterOrThrow(command.CharacterId);
         player.SetMainCharacter(character);
-        _playerRepository.SaveChanges();
+        await _playerRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(player);
     }
 }

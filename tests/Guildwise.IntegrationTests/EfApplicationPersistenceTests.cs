@@ -26,16 +26,16 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         => Task.CompletedTask;
 
     [Fact]
-    public void CreateCharacter_Persists_Character_For_Existing_Player()
+    public async Task CreateCharacter_Persists_Character_For_Existing_Player()
     {
-        var player = AddPlayer();
+        var player = await AddPlayerAsync();
         var characterName = UniqueName("Alysa");
 
         using (var actContext = _fixture.CreateDbContext())
         {
             var handler = new CreateCharacterHandler(new EfPlayerRepository(actContext));
 
-            handler.Handle(new CreateCharacterCommand(
+            await handler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 characterName,
                 "EU",
@@ -46,53 +46,53 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
         var character = Assert.Single(loaded!.Characters);
         Assert.Equal(characterName, character.Name);
     }
 
     [Fact]
-    public void SetMainCharacter_Persists_Main_Character_Assignment()
+    public async Task SetMainCharacter_Persists_Main_Character_Assignment()
     {
-        var player = AddPlayerWithCharacter();
+        var player = await AddPlayerWithCharacterAsync();
         var character = player.Characters.Single();
 
         using (var actContext = _fixture.CreateDbContext())
         {
             var handler = new SetMainCharacterHandler(new EfPlayerRepository(actContext));
 
-            handler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
+            await handler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfPlayerRepository(assertContext).GetById(player.Id);
+        var loaded = await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id);
         Assert.Equal(character.Id, loaded!.MainCharacterId);
     }
 
     [Fact]
-    public void CreateRaidTeam_Persists_Raid_Team_For_Existing_Guild()
+    public async Task CreateRaidTeam_Persists_Raid_Team_For_Existing_Guild()
     {
-        var guild = AddGuild();
+        var guild = await AddGuildAsync();
         var raidTeamName = UniqueName("RaidTeam");
 
         using (var actContext = _fixture.CreateDbContext())
         {
             var handler = new CreateRaidTeamHandler(new EfGuildRepository(actContext));
 
-            handler.Handle(new CreateRaidTeamCommand(guild.Id, raidTeamName));
+            await handler.HandleAsync(new CreateRaidTeamCommand(guild.Id, raidTeamName));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
         var raidTeam = Assert.Single(loaded!.RaidTeams);
         Assert.Equal(raidTeamName, raidTeam.Name);
     }
 
     [Fact]
-    public void AddPlayerToGuild_Persists_Guild_Membership()
+    public async Task AddPlayerToGuild_Persists_Guild_Membership()
     {
-        var guild = AddGuild();
-        var player = AddPlayer();
+        var guild = await AddGuildAsync();
+        var player = await AddPlayerAsync();
 
         using (var actContext = _fixture.CreateDbContext())
         {
@@ -100,20 +100,20 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             var playerRepository = new EfPlayerRepository(actContext);
             var handler = new AddPlayerToGuildHandler(guildRepository, playerRepository);
 
-            handler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            await handler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
         var member = Assert.Single(loaded!.Members);
         Assert.Equal(player.Id, member.PlayerId);
     }
 
     [Fact]
-    public void AddPlayerToRaidTeam_Persists_Raid_Team_Membership()
+    public async Task AddPlayerToRaidTeam_Persists_Raid_Team_Membership()
     {
-        var player = AddPlayerWithMainCharacter();
-        var guild = AddGuildWithMemberAndRaidTeam(player);
+        var player = await AddPlayerWithMainCharacterAsync();
+        var guild = await AddGuildWithMemberAndRaidTeamAsync(player);
         var raidTeam = guild.RaidTeams.Single();
 
         using (var actContext = _fixture.CreateDbContext())
@@ -122,27 +122,27 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             var playerRepository = new EfPlayerRepository(actContext);
             var handler = new AddPlayerToRaidTeamHandler(guildRepository, playerRepository);
 
-            handler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+            await handler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
         }
 
         using var assertContext = _fixture.CreateDbContext();
-        var loaded = new EfGuildRepository(assertContext).GetById(guild.Id);
+        var loaded = await new EfGuildRepository(assertContext).GetByIdAsync(guild.Id);
         var loadedRaidTeam = Assert.Single(loaded!.RaidTeams);
         var raidTeamMember = Assert.Single(loadedRaidTeam.Members);
         Assert.Equal(player.Id, raidTeamMember.PlayerId);
     }
 
-    private Player AddPlayer()
+    private async Task<Player> AddPlayerAsync()
     {
         var player = Player.Create(UniqueName("Player"));
 
         using var context = _fixture.CreateDbContext();
-        new EfPlayerRepository(context).Add(player);
+        await new EfPlayerRepository(context).AddAsync(player);
 
         return player;
     }
 
-    private Player AddPlayerWithCharacter()
+    private async Task<Player> AddPlayerWithCharacterAsync()
     {
         var player = Player.Create(UniqueName("Player"));
         player.AddCharacter(
@@ -154,12 +154,12 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             CharacterRole.Damage);
 
         using var context = _fixture.CreateDbContext();
-        new EfPlayerRepository(context).Add(player);
+        await new EfPlayerRepository(context).AddAsync(player);
 
         return player;
     }
 
-    private Player AddPlayerWithMainCharacter()
+    private async Task<Player> AddPlayerWithMainCharacterAsync()
     {
         var player = Player.Create(UniqueName("Player"));
         var character = player.AddCharacter(
@@ -172,29 +172,29 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         player.SetMainCharacter(character);
 
         using var context = _fixture.CreateDbContext();
-        new EfPlayerRepository(context).Add(player);
+        await new EfPlayerRepository(context).AddAsync(player);
 
         return player;
     }
 
-    private Guild AddGuild()
+    private async Task<Guild> AddGuildAsync()
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
 
         using var context = _fixture.CreateDbContext();
-        new EfGuildRepository(context).Add(guild);
+        await new EfGuildRepository(context).AddAsync(guild);
 
         return guild;
     }
 
-    private Guild AddGuildWithMemberAndRaidTeam(Player player)
+    private async Task<Guild> AddGuildWithMemberAndRaidTeamAsync(Player player)
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
         guild.AddMember(player, GuildRank.Member);
         guild.CreateRaidTeam(UniqueName("RaidTeam"));
 
         using var context = _fixture.CreateDbContext();
-        new EfGuildRepository(context).Add(guild);
+        await new EfGuildRepository(context).AddAsync(guild);
 
         return guild;
     }

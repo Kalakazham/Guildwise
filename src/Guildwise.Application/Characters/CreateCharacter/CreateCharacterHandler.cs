@@ -13,11 +13,13 @@ public sealed class CreateCharacterHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public CharacterDto Handle(CreateCharacterCommand command)
+    public async Task<CharacterDto> HandleAsync(
+        CreateCharacterCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
         var character = player.AddCharacter(
             command.Name,
             command.Region,
@@ -25,7 +27,7 @@ public sealed class CreateCharacterHandler
             command.CharacterClass,
             command.Specialization,
             command.Role);
-        _playerRepository.SaveChanges();
+        await _playerRepository.SaveChangesAsync(cancellationToken);
 
         return DtoMapper.ToDto(character);
     }

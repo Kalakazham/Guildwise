@@ -13,14 +13,16 @@ public sealed class RemovePlayerFromRaidTeamHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public RaidTeamDto Handle(RemovePlayerFromRaidTeamCommand command)
+    public async Task<RaidTeamDto> HandleAsync(
+        RemovePlayerFromRaidTeamCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
         var raidTeam = guild.GetRaidTeamOrThrow(command.RaidTeamId);
         guild.RemovePlayerFromRaidTeam(raidTeam, command.PlayerId);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(raidTeam);
     }
 }

@@ -12,13 +12,13 @@ public sealed class DeleteRaidTeamHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public void Handle(DeleteRaidTeamCommand command)
+    public async Task HandleAsync(DeleteRaidTeamCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
         guild.GetRaidTeamOrThrow(command.RaidTeamId);
         guild.RemoveRaidTeam(command.RaidTeamId);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
     }
 }

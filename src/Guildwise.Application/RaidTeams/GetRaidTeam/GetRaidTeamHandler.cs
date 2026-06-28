@@ -13,11 +13,13 @@ public sealed class GetRaidTeamHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public RaidTeamDto? Handle(GetRaidTeamQuery query)
+    public async Task<RaidTeamDto?> HandleAsync(
+        GetRaidTeamQuery query,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var guild = _guildRepository.GetById(query.GuildId);
+        var guild = await _guildRepository.GetByIdAsync(query.GuildId, cancellationToken);
         var raidTeam = guild?.RaidTeams.FirstOrDefault(existing => existing.Id == query.RaidTeamId);
 
         return raidTeam is null ? null : DtoMapper.ToDto(raidTeam);

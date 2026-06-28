@@ -39,34 +39,34 @@ namespace Guildwise.UnitTests;
 public sealed class ApplicationUseCaseTests
 {
     [Fact]
-    public void CreateGuild_Stores_Guild_And_Returns_Dto()
+    public async Task CreateGuild_Stores_Guild_And_Returns_Dto()
     {
         var context = new TestContext();
 
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
 
         Assert.Equal("Guildwise", guild.Name);
-        Assert.Single(context.GuildRepository.List());
-        Assert.Equal(guild.Id, context.GetGuildHandler.Handle(new GetGuildQuery(guild.Id))?.Id);
+        Assert.Single(await context.GuildRepository.ListAsync());
+        Assert.Equal(guild.Id, (await context.GetGuildHandler.HandleAsync(new GetGuildQuery(guild.Id)))?.Id);
     }
 
     [Fact]
-    public void UpdateUnknownPlayer_Throws_NotFoundException()
+    public async Task UpdateUnknownPlayer_Throws_NotFoundException()
     {
         var context = new TestContext();
 
-        var exception = Assert.Throws<NotFoundException>(() =>
-            context.UpdatePlayerHandler.Handle(new UpdatePlayerCommand(Guid.NewGuid(), "Myrmi")));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            context.UpdatePlayerHandler.HandleAsync(new UpdatePlayerCommand(Guid.NewGuid(), "Myrmi")));
 
         Assert.Contains("Player", exception.Message);
     }
 
     [Fact]
-    public void CreateCharacterForUnknownPlayer_Throws_NotFoundException()
+    public async Task CreateCharacterForUnknownPlayer_Throws_NotFoundException()
     {
         var context = new TestContext();
 
-        Assert.Throws<NotFoundException>(() => context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        await Assert.ThrowsAsync<NotFoundException>(() => context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             Guid.NewGuid(),
             "Alysa",
             "EU",
@@ -77,22 +77,22 @@ public sealed class ApplicationUseCaseTests
     }
 
     [Fact]
-    public void CreateRaidTeamForUnknownGuild_Throws_NotFoundException()
+    public async Task CreateRaidTeamForUnknownGuild_Throws_NotFoundException()
     {
         var context = new TestContext();
 
-        Assert.Throws<NotFoundException>(() => context.CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(
+        await Assert.ThrowsAsync<NotFoundException>(() => context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(
             Guid.NewGuid(),
             "Team One")));
     }
 
     [Fact]
-    public void AddPlayerToRaidTeam_When_Player_Is_Not_GuildMember_Fails()
+    public async Task AddPlayerToRaidTeam_When_Player_Is_Not_GuildMember_Fails()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
-        var character = context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
@@ -100,22 +100,22 @@ public sealed class ApplicationUseCaseTests
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
             CharacterRole.Damage));
-        context.SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
-        var raidTeam = context.CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guild.Id, "Team One"));
+        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            context.AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
 
         Assert.Contains("guild member", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void AddPlayerToUnknownRaidTeam_Throws_NotFoundException()
+    public async Task AddPlayerToUnknownRaidTeam_Throws_NotFoundException()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
-        var character = context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
@@ -123,32 +123,32 @@ public sealed class ApplicationUseCaseTests
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
             CharacterRole.Damage));
-        context.SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
-        context.AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
 
-        Assert.Throws<NotFoundException>(() => context.AddPlayerToRaidTeamHandler.Handle(
+        await Assert.ThrowsAsync<NotFoundException>(() => context.AddPlayerToRaidTeamHandler.HandleAsync(
             new AddPlayerToRaidTeamCommand(guild.Id, Guid.NewGuid(), player.Id)));
     }
 
     [Fact]
-    public void CreateAndUpdatePlayer_Works_Through_Application_Handler()
+    public async Task CreateAndUpdatePlayer_Works_Through_Application_Handler()
     {
         var context = new TestContext();
 
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
-        var updated = context.UpdatePlayerHandler.Handle(new UpdatePlayerCommand(player.Id, "Myrmi Two"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        var updated = await context.UpdatePlayerHandler.HandleAsync(new UpdatePlayerCommand(player.Id, "Myrmi Two"));
 
         Assert.Equal("Myrmi Two", updated.DisplayName);
-        Assert.Equal("Myrmi Two", context.GetPlayerHandler.Handle(new GetPlayerQuery(player.Id))?.DisplayName);
+        Assert.Equal("Myrmi Two", (await context.GetPlayerHandler.HandleAsync(new GetPlayerQuery(player.Id)))?.DisplayName);
     }
 
     [Fact]
-    public void CreateCharacter_UpdateCharacter_And_SetMainCharacter_Work()
+    public async Task CreateCharacter_UpdateCharacter_And_SetMainCharacter_Work()
     {
         var context = new TestContext();
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
 
-        var character = context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
@@ -157,7 +157,7 @@ public sealed class ApplicationUseCaseTests
             CharacterSpecialization.MageFrost,
             CharacterRole.Damage));
 
-        var updated = context.UpdateCharacterHandler.Handle(new UpdateCharacterCommand(
+        var updated = await context.UpdateCharacterHandler.HandleAsync(new UpdateCharacterCommand(
             player.Id,
             character.Id,
             "Alysa",
@@ -167,20 +167,20 @@ public sealed class ApplicationUseCaseTests
             CharacterSpecialization.MageFire,
             CharacterRole.Damage));
 
-        var mainCharacter = context.SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, updated.Id));
+        var mainCharacter = await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, updated.Id));
 
         Assert.Equal(CharacterSpecialization.MageFire, updated.Specialization);
         Assert.Equal(updated.Id, mainCharacter.MainCharacterId);
-        Assert.Single(context.ListCharactersForPlayerHandler.Handle(new ListCharactersForPlayerQuery(player.Id)));
+        Assert.Single(await context.ListCharactersForPlayerHandler.HandleAsync(new ListCharactersForPlayerQuery(player.Id)));
     }
 
     [Fact]
-    public void CreateRaidTeam_AddPlayerToGuild_And_AddPlayerToRaidTeam_Work()
+    public async Task CreateRaidTeam_AddPlayerToGuild_And_AddPlayerToRaidTeam_Work()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
-        var character = context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
@@ -189,44 +189,44 @@ public sealed class ApplicationUseCaseTests
             CharacterSpecialization.PaladinRetribution,
             CharacterRole.Damage));
 
-        context.SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
-        context.AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
 
-        var raidTeam = context.CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guild.Id, "Team One"));
-        var roster = context.AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+        var roster = await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
 
         Assert.Single(roster.Members);
         Assert.Equal(player.Id, roster.Members.Single().PlayerId);
-        Assert.Single(context.ListRaidTeamsForGuildHandler.Handle(new ListRaidTeamsForGuildQuery(guild.Id)));
+        Assert.Single(await context.ListRaidTeamsForGuildHandler.HandleAsync(new ListRaidTeamsForGuildQuery(guild.Id)));
     }
 
     [Fact]
-    public void RenameRaidTeam_And_DeleteRaidTeam_Work_Through_Guild()
+    public async Task RenameRaidTeam_And_DeleteRaidTeam_Work_Through_Guild()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
-        var raidTeam = context.CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guild.Id, "Team One"));
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
 
-        var renamed = context.UpdateRaidTeamHandler.Handle(new UpdateRaidTeamCommand(guild.Id, raidTeam.Id, "Team Two"));
-        context.DeleteRaidTeamHandler.Handle(new DeleteRaidTeamCommand(guild.Id, raidTeam.Id));
+        var renamed = await context.UpdateRaidTeamHandler.HandleAsync(new UpdateRaidTeamCommand(guild.Id, raidTeam.Id, "Team Two"));
+        await context.DeleteRaidTeamHandler.HandleAsync(new DeleteRaidTeamCommand(guild.Id, raidTeam.Id));
 
         Assert.Equal("Team Two", renamed.Name);
-        Assert.Empty(context.ListRaidTeamsForGuildHandler.Handle(new ListRaidTeamsForGuildQuery(guild.Id)));
+        Assert.Empty(await context.ListRaidTeamsForGuildHandler.HandleAsync(new ListRaidTeamsForGuildQuery(guild.Id)));
     }
 
     [Fact]
-    public void GuildMember_Roles_Are_Managed_Through_Application_Handler()
+    public async Task GuildMember_Roles_Are_Managed_Through_Application_Handler()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
 
-        context.AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Officer));
-        var added = context.AddAdditionalRoleHandler.Handle(new AddAdditionalRoleToGuildMemberCommand(
+        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Officer));
+        var added = await context.AddAdditionalRoleHandler.HandleAsync(new AddAdditionalRoleToGuildMemberCommand(
             guild.Id,
             player.Id,
             AdditionalGuildRole.RaidLead));
-        var removed = context.RemoveAdditionalRoleHandler.Handle(new RemoveAdditionalRoleFromGuildMemberCommand(
+        var removed = await context.RemoveAdditionalRoleHandler.HandleAsync(new RemoveAdditionalRoleFromGuildMemberCommand(
             guild.Id,
             player.Id,
             AdditionalGuildRole.RaidLead));
@@ -236,12 +236,12 @@ public sealed class ApplicationUseCaseTests
     }
 
     [Fact]
-    public void DeletePlayer_Removes_Guild_Memberships_And_RaidTeam_Memberships()
+    public async Task DeletePlayer_Removes_Guild_Memberships_And_RaidTeam_Memberships()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
-        var character = context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
+        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
@@ -249,37 +249,37 @@ public sealed class ApplicationUseCaseTests
             CharacterClass.Paladin,
             CharacterSpecialization.PaladinRetribution,
             CharacterRole.Damage));
-        context.SetMainCharacterHandler.Handle(new SetMainCharacterCommand(player.Id, character.Id));
-        context.AddPlayerToGuildHandler.Handle(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
-        var raidTeam = context.CreateRaidTeamHandler.Handle(new CreateRaidTeamCommand(guild.Id, "Team One"));
-        context.AddPlayerToRaidTeamHandler.Handle(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+        await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+        await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+        var raidTeam = await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
+        await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
 
-        context.DeletePlayerHandler.Handle(new DeletePlayerCommand(player.Id));
+        await context.DeletePlayerHandler.HandleAsync(new DeletePlayerCommand(player.Id));
 
-        Assert.Null(context.GetPlayerHandler.Handle(new GetPlayerQuery(player.Id)));
-        Assert.Empty(context.GetGuildHandler.Handle(new GetGuildQuery(guild.Id))!.Members);
-        Assert.Empty(context.GetRaidTeamHandler.Handle(new GetRaidTeamQuery(guild.Id, raidTeam.Id))!.Members);
+        Assert.Null(await context.GetPlayerHandler.HandleAsync(new GetPlayerQuery(player.Id)));
+        Assert.Empty((await context.GetGuildHandler.HandleAsync(new GetGuildQuery(guild.Id)))!.Members);
+        Assert.Empty((await context.GetRaidTeamHandler.HandleAsync(new GetRaidTeamQuery(guild.Id, raidTeam.Id)))!.Members);
     }
 
     [Fact]
-    public void DeleteGuild_Removes_Guild()
+    public async Task DeleteGuild_Removes_Guild()
     {
         var context = new TestContext();
-        var guild = context.CreateGuildHandler.Handle(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
+        var guild = await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor"));
 
-        context.DeleteGuildHandler.Handle(new DeleteGuildCommand(guild.Id));
+        await context.DeleteGuildHandler.HandleAsync(new DeleteGuildCommand(guild.Id));
 
-        Assert.Null(context.GetGuildHandler.Handle(new GetGuildQuery(guild.Id)));
-        Assert.Empty(context.ListGuildsHandler.Handle(new ListGuildsQuery()));
+        Assert.Null(await context.GetGuildHandler.HandleAsync(new GetGuildQuery(guild.Id)));
+        Assert.Empty(await context.ListGuildsHandler.HandleAsync(new ListGuildsQuery()));
     }
 
     [Fact]
-    public void CreateCharacter_Returns_Created_Character()
+    public async Task CreateCharacter_Returns_Created_Character()
     {
         var context = new TestContext();
-        var player = context.CreatePlayerHandler.Handle(new CreatePlayerCommand("Myrmi"));
+        var player = await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi"));
 
-        var character = context.CreateCharacterHandler.Handle(new CreateCharacterCommand(
+        var character = await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
             player.Id,
             "Alysa",
             "EU",
@@ -289,7 +289,7 @@ public sealed class ApplicationUseCaseTests
             CharacterRole.Damage));
 
         Assert.Equal(CharacterClass.DeathKnight, character.CharacterClass);
-        Assert.Single(context.ListCharactersHandler.Handle(new ListCharactersQuery()));
+        Assert.Single(await context.ListCharactersHandler.HandleAsync(new ListCharactersQuery()));
     }
 
     private sealed class TestContext
@@ -370,41 +370,52 @@ public sealed class ApplicationUseCaseTests
     {
         private readonly Dictionary<Guid, Guild> _guilds = new();
 
-        public Guild? GetById(Guid id)
-            => _guilds.TryGetValue(id, out var guild) ? guild : null;
+        public Task<Guild?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_guilds.TryGetValue(id, out var guild) ? guild : null);
 
-        public IReadOnlyCollection<Guild> List()
-            => _guilds.Values.ToList();
+        public Task<IReadOnlyCollection<Guild>> ListAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyCollection<Guild>>(_guilds.Values.ToList());
 
-        public void Add(Guild guild)
-            => _guilds.Add(guild.Id, guild);
-
-        public void Remove(Guid id)
-            => _guilds.Remove(id);
-
-        public void SaveChanges()
+        public Task AddAsync(Guild guild, CancellationToken cancellationToken = default)
         {
+            _guilds.Add(guild.Id, guild);
+            return Task.CompletedTask;
         }
+
+        public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            _guilds.Remove(id);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 
     private sealed class InMemoryPlayerRepository : IPlayerRepository
     {
         private readonly Dictionary<Guid, Player> _players = new();
 
-        public Player? GetById(Guid id)
-            => _players.TryGetValue(id, out var player) ? player : null;
+        public Task<Player?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_players.TryGetValue(id, out var player) ? player : null);
 
-        public IReadOnlyCollection<Player> List()
-            => _players.Values.ToList();
+        public Task<IReadOnlyCollection<Player>> ListAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyCollection<Player>>(_players.Values.ToList());
 
-        public void Add(Player player)
-            => _players.Add(player.Id, player);
-
-        public void Remove(Guid id)
-            => _players.Remove(id);
-
-        public void SaveChanges()
+        public Task AddAsync(Player player, CancellationToken cancellationToken = default)
         {
+            _players.Add(player.Id, player);
+            return Task.CompletedTask;
         }
+
+        public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            _players.Remove(id);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }
+

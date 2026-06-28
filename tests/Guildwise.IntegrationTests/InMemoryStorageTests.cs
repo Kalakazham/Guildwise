@@ -9,27 +9,27 @@ namespace Guildwise.IntegrationTests;
 public sealed class InMemoryStorageTests
 {
     [Fact]
-    public void GuildRepository_Adds_And_Retrieves_Guild()
+    public async Task GuildRepository_Adds_And_Retrieves_Guild()
     {
         var repository = new InMemoryGuildRepository();
         var guild = Guild.Create("Guildwise", "EU", "Draenor");
 
-        repository.Add(guild);
+        await repository.AddAsync(guild);
 
-        Assert.Same(guild, repository.GetById(guild.Id));
+        Assert.Same(guild, await repository.GetByIdAsync(guild.Id));
     }
 
     [Fact]
-    public void GuildRepository_Lists_Guilds()
+    public async Task GuildRepository_Lists_Guilds()
     {
         var repository = new InMemoryGuildRepository();
         var firstGuild = Guild.Create("Guildwise", "EU", "Draenor");
         var secondGuild = Guild.Create("Night Shift", "US", "Area 52");
 
-        repository.Add(firstGuild);
-        repository.Add(secondGuild);
+        await repository.AddAsync(firstGuild);
+        await repository.AddAsync(secondGuild);
 
-        var guilds = repository.List();
+        var guilds = await repository.ListAsync();
 
         Assert.Collection(
             guilds.OrderBy(guild => guild.Name),
@@ -38,40 +38,40 @@ public sealed class InMemoryStorageTests
     }
 
     [Fact]
-    public void GuildRepository_Removes_Guild()
+    public async Task GuildRepository_Removes_Guild()
     {
         var repository = new InMemoryGuildRepository();
         var guild = Guild.Create("Guildwise", "EU", "Draenor");
 
-        repository.Add(guild);
-        repository.Remove(guild.Id);
+        await repository.AddAsync(guild);
+        await repository.RemoveAsync(guild.Id);
 
-        Assert.Null(repository.GetById(guild.Id));
-        Assert.Empty(repository.List());
+        Assert.Null(await repository.GetByIdAsync(guild.Id));
+        Assert.Empty(await repository.ListAsync());
     }
 
     [Fact]
-    public void PlayerRepository_Adds_And_Retrieves_Player()
+    public async Task PlayerRepository_Adds_And_Retrieves_Player()
     {
         var repository = new InMemoryPlayerRepository();
         var player = Player.Create("Myrmi");
 
-        repository.Add(player);
+        await repository.AddAsync(player);
 
-        Assert.Same(player, repository.GetById(player.Id));
+        Assert.Same(player, await repository.GetByIdAsync(player.Id));
     }
 
     [Fact]
-    public void PlayerRepository_Lists_Players()
+    public async Task PlayerRepository_Lists_Players()
     {
         var repository = new InMemoryPlayerRepository();
         var firstPlayer = Player.Create("Myrmi");
         var secondPlayer = Player.Create("Alysa");
 
-        repository.Add(firstPlayer);
-        repository.Add(secondPlayer);
+        await repository.AddAsync(firstPlayer);
+        await repository.AddAsync(secondPlayer);
 
-        var players = repository.List();
+        var players = await repository.ListAsync();
 
         Assert.Collection(
             players.OrderBy(player => player.DisplayName),
@@ -80,16 +80,16 @@ public sealed class InMemoryStorageTests
     }
 
     [Fact]
-    public void PlayerRepository_Removes_Player()
+    public async Task PlayerRepository_Removes_Player()
     {
         var repository = new InMemoryPlayerRepository();
         var player = Player.Create("Myrmi");
 
-        repository.Add(player);
-        repository.Remove(player.Id);
+        await repository.AddAsync(player);
+        await repository.RemoveAsync(player.Id);
 
-        Assert.Null(repository.GetById(player.Id));
-        Assert.Empty(repository.List());
+        Assert.Null(await repository.GetByIdAsync(player.Id));
+        Assert.Empty(await repository.ListAsync());
     }
 
     [Fact]

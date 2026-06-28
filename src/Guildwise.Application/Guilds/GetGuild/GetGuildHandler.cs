@@ -13,11 +13,11 @@ public sealed class GetGuildHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public GuildDto? Handle(GetGuildQuery query)
+    public async Task<GuildDto?> HandleAsync(GetGuildQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return _guildRepository.GetById(query.GuildId) is { } guild
+        return await _guildRepository.GetByIdAsync(query.GuildId, cancellationToken) is { } guild
             ? DtoMapper.ToDto(guild)
             : null;
     }

@@ -13,13 +13,15 @@ public sealed class UpdateGuildHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public GuildDto Handle(UpdateGuildCommand command)
+    public async Task<GuildDto> HandleAsync(
+        UpdateGuildCommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var guild = _guildRepository.GetGuildOrThrow(command.GuildId);
+        var guild = await _guildRepository.GetGuildOrThrowAsync(command.GuildId, cancellationToken);
         guild.Update(command.Name, command.Region, command.Realm);
-        _guildRepository.SaveChanges();
+        await _guildRepository.SaveChangesAsync(cancellationToken);
         return DtoMapper.ToDto(guild);
     }
 }

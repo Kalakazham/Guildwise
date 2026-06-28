@@ -4,13 +4,13 @@ namespace Guildwise.Application.Abstractions.Persistence;
 
 public interface IGuildRepository
 {
-    Guild? GetById(Guid id);
+    Task<Guild?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    IReadOnlyCollection<Guild> List();
+    Task<IReadOnlyCollection<Guild>> ListAsync(CancellationToken cancellationToken = default);
 
-    void Add(Guild guild);
+    Task AddAsync(Guild guild, CancellationToken cancellationToken = default);
 
-    void Remove(Guid id);
+    Task RemoveAsync(Guid id, CancellationToken cancellationToken = default);
 
-    void SaveChanges();
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

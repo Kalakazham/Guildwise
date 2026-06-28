@@ -8,23 +8,23 @@ public sealed class InMemoryGuildRepository : IGuildRepository
     private readonly Dictionary<Guid, Guild> _guilds = new();
     private readonly object _syncRoot = new();
 
-    public Guild? GetById(Guid id)
+    public Task<Guild?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_syncRoot)
         {
-            return _guilds.TryGetValue(id, out var guild) ? guild : null;
+            return Task.FromResult(_guilds.TryGetValue(id, out var guild) ? guild : null);
         }
     }
 
-    public IReadOnlyCollection<Guild> List()
+    public Task<IReadOnlyCollection<Guild>> ListAsync(CancellationToken cancellationToken = default)
     {
         lock (_syncRoot)
         {
-            return _guilds.Values.ToList();
+            return Task.FromResult<IReadOnlyCollection<Guild>>(_guilds.Values.ToList());
         }
     }
 
-    public void Add(Guild guild)
+    public Task AddAsync(Guild guild, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(guild);
 
@@ -32,17 +32,20 @@ public sealed class InMemoryGuildRepository : IGuildRepository
         {
             _guilds.Add(guild.Id, guild);
         }
+
+        return Task.CompletedTask;
     }
 
-    public void Remove(Guid id)
+    public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_syncRoot)
         {
             _guilds.Remove(id);
         }
+
+        return Task.CompletedTask;
     }
 
-    public void SaveChanges()
-    {
-    }
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }

@@ -8,23 +8,23 @@ public sealed class InMemoryPlayerRepository : IPlayerRepository
     private readonly Dictionary<Guid, Player> _players = new();
     private readonly object _syncRoot = new();
 
-    public Player? GetById(Guid id)
+    public Task<Player?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_syncRoot)
         {
-            return _players.TryGetValue(id, out var player) ? player : null;
+            return Task.FromResult(_players.TryGetValue(id, out var player) ? player : null);
         }
     }
 
-    public IReadOnlyCollection<Player> List()
+    public Task<IReadOnlyCollection<Player>> ListAsync(CancellationToken cancellationToken = default)
     {
         lock (_syncRoot)
         {
-            return _players.Values.ToList();
+            return Task.FromResult<IReadOnlyCollection<Player>>(_players.Values.ToList());
         }
     }
 
-    public void Add(Player player)
+    public Task AddAsync(Player player, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(player);
 
@@ -32,17 +32,20 @@ public sealed class InMemoryPlayerRepository : IPlayerRepository
         {
             _players.Add(player.Id, player);
         }
+
+        return Task.CompletedTask;
     }
 
-    public void Remove(Guid id)
+    public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_syncRoot)
         {
             _players.Remove(id);
         }
+
+        return Task.CompletedTask;
     }
 
-    public void SaveChanges()
-    {
-    }
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }

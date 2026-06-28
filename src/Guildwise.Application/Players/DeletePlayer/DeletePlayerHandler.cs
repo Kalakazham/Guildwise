@@ -14,18 +14,19 @@ public sealed class DeletePlayerHandler
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
     }
 
-    public void Handle(DeletePlayerCommand command)
+    public async Task HandleAsync(DeletePlayerCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var player = _playerRepository.GetPlayerOrThrow(command.PlayerId);
+        var player = await _playerRepository.GetPlayerOrThrowAsync(command.PlayerId, cancellationToken);
 
-        foreach (var guild in _guildRepository.List())
+        var guilds = await _guildRepository.ListAsync(cancellationToken);
+        foreach (var guild in guilds)
         {
             guild.RemoveMember(player.Id);
         }
 
-        _guildRepository.SaveChanges();
-        _playerRepository.Remove(command.PlayerId);
+        await _guildRepository.SaveChangesAsync(cancellationToken);
+        await _playerRepository.RemoveAsync(command.PlayerId, cancellationToken);
     }
 }

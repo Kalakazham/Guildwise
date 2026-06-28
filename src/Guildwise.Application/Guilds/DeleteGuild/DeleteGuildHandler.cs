@@ -11,10 +11,10 @@ public sealed class DeleteGuildHandler
         _guildRepository = guildRepository ?? throw new ArgumentNullException(nameof(guildRepository));
     }
 
-    public void Handle(DeleteGuildCommand command)
+    public async Task HandleAsync(DeleteGuildCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        _guildRepository.Remove(command.GuildId);
+        await _guildRepository.RemoveAsync(command.GuildId, cancellationToken);
     }
 }
