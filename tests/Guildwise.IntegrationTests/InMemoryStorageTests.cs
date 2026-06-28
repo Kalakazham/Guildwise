@@ -109,6 +109,11 @@ public sealed class InMemoryStorageTests
             descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
                 && descriptor.ImplementationType == typeof(InMemoryPlayerRepository)
                 && descriptor.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(InMemoryTransactionRunner)
+                && descriptor.Lifetime == ServiceLifetime.Singleton);
     }
 
     [Fact]
@@ -127,6 +132,11 @@ public sealed class InMemoryStorageTests
             services,
             descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
                 && descriptor.ImplementationType == typeof(InMemoryPlayerRepository)
+                && descriptor.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(InMemoryTransactionRunner)
                 && descriptor.Lifetime == ServiceLifetime.Singleton);
     }
 }

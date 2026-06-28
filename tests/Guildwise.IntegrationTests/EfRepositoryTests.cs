@@ -3,6 +3,8 @@ using Guildwise.Domain;
 using Guildwise.Infrastructure;
 using Guildwise.Infrastructure.Persistence;
 using Guildwise.IntegrationTests.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,6 +49,34 @@ public sealed class EfRepositoryTests : IAsyncLifetime
             descriptor => descriptor.ServiceType == typeof(IPlayerRepository)
                 && descriptor.ImplementationType == typeof(EfPlayerRepository)
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
+        Assert.Contains(
+            services,
+            descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
+                && descriptor.ImplementationType == typeof(EfTransactionRunner)
+                && descriptor.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Fact]
+    public async Task EfTransactionRunner_Rolls_Back_When_Operation_Throws()
+    {
+        var guildName = UniqueName("Guild");
+
+        using (var actContext = _fixture.CreateDbContext())
+        {
+            var transactionRunner = new EfTransactionRunner(actContext);
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                transactionRunner.ExecuteAsync(async cancellationToken =>
+                {
+                    await actContext.Guilds.AddAsync(Guild.Create(guildName, "EU", "Draenor"), cancellationToken);
+                    await actContext.SaveChangesAsync(cancellationToken);
+                    throw new InvalidOperationException("Forced transaction failure.");
+                }));
+
+            Assert.Equal("Forced transaction failure.", exception.Message);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        Assert.Empty(assertContext.Guilds.Where(guild => guild.Name == guildName));
     }
 
     [Fact]
@@ -97,6 +127,37 @@ public sealed class EfRepositoryTests : IAsyncLifetime
         Assert.Equal(CharacterClass.Paladin, loadedCharacter.CharacterClass);
         Assert.Equal(CharacterSpecialization.PaladinRetribution, loadedCharacter.Specialization);
         Assert.Equal(CharacterRole.Damage, loadedCharacter.Role);
+    }
+
+    [Fact]
+    public async Task EfPlayerRepository_Rolls_Back_Player_With_MainCharacter_When_Second_Save_Fails()
+    {
+        var player = Player.Create(UniqueName("Player"));
+        var character = player.AddCharacter(
+            UniqueName("Alysa"),
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage);
+        player.SetMainCharacter(character);
+        var interceptor = new ThrowOnSecondSaveChangesInterceptor();
+        var options = new DbContextOptionsBuilder<GuildwiseDbContext>()
+            .UseNpgsql(_fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        using (var arrangeContext = new GuildwiseDbContext(options))
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => new EfPlayerRepository(arrangeContext).AddAsync(player));
+
+            Assert.Equal("Forced second save failure.", exception.Message);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        Assert.Null(await new EfPlayerRepository(assertContext).GetByIdAsync(player.Id));
+        Assert.False(await assertContext.Set<Character>().AnyAsync(existingCharacter => existingCharacter.Id == character.Id));
     }
 
     [Fact]
@@ -168,4 +229,24 @@ public sealed class EfRepositoryTests : IAsyncLifetime
 
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
+
+    private sealed class ThrowOnSecondSaveChangesInterceptor : SaveChangesInterceptor
+    {
+        private int _saveChangesCalls;
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            _saveChangesCalls++;
+
+            if (_saveChangesCalls == 2)
+            {
+                throw new InvalidOperationException("Forced second save failure.");
+            }
+
+            return new ValueTask<InterceptionResult<int>>(result);
+        }
+    }
 }
