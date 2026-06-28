@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: guildwise
       POSTGRES_PASSWORD: guildwise
     ports:
-      - "5432:5432"
+      - "55432:5432"
     volumes:
       - guildwise_postgres_data:/var/lib/postgresql/data
 
