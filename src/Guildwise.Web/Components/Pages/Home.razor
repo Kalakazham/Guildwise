@@ -275,6 +275,8 @@
             var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand(guildName, guildRegion, guildRealm));
             selectedGuildId = guild.Id.ToString();
             statusMessage = $"Created guild {guild.Name}.";
+            statusKind = "success";
+            await RefreshDataAsync();
         });
     }
 
@@ -285,6 +287,8 @@
             var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand(playerName));
             selectedPlayerId = player.Id.ToString();
             statusMessage = $"Created player {player.DisplayName}.";
+            statusKind = "success";
+            await RefreshDataAsync();
         });
     }
 
@@ -292,19 +296,39 @@
     {
         await RunActionAsync(async () =>
         {
-            var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
+            if (!TryReadGuid(selectedPlayerId, "Select a player first.", out var playerId))
+            {
+                return;
+            }
+
             var preset = characterPresets.Single(existing => existing.Name == selectedCharacterPresetName);
-            var character = Unwrap(await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            var createCharacterResult = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 playerId,
                 characterName,
                 characterRegion,
                 characterRealm,
                 preset.CharacterClass,
                 preset.Specialization,
-                preset.Role)));
+                preset.Role));
 
-            EnsureSuccess(await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(playerId, character.Id)));
+            if (createCharacterResult.IsFailure)
+            {
+                ShowFailure(createCharacterResult.Failure!);
+                return;
+            }
+
+            var character = GetSuccessfulValue(createCharacterResult);
+            var setMainResult = await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(playerId, character.Id));
+            if (setMainResult.IsFailure)
+            {
+                ShowFailure(setMainResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
+
             statusMessage = $"Created {character.Name} and set it as main.";
+            statusKind = "success";
+            await RefreshDataAsync();
         });
     }
 
@@ -312,10 +336,16 @@
     {
         await RunActionAsync(async () =>
         {
-            var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
+            if (!TryReadGuid(selectedGuildId, "Select a guild first.", out var guildId))
+            {
+                return;
+            }
+
             var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guildId, raidTeamName));
             selectedRaidTeamId = raidTeam.Id.ToString();
             statusMessage = $"Created raid team {raidTeam.Name}.";
+            statusKind = "success";
+            await RefreshDataAsync();
         });
     }
 
@@ -323,11 +353,15 @@
     {
         await RunActionAsync(async () =>
         {
-            var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
-            var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
+            if (!TryReadGuid(selectedGuildId, "Select a guild first.", out var guildId)
+                || !TryReadGuid(selectedPlayerId, "Select a player first.", out var playerId))
+            {
+                return;
+            }
 
-            EnsureSuccess(await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member)));
-            statusMessage = "Added player to guild.";
+            await RunResultActionAsync(
+                () => AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guildId, playerId, GuildRank.Member)),
+                "Added player to guild.");
         });
     }
 
@@ -335,12 +369,16 @@
     {
         await RunActionAsync(async () =>
         {
-            var guildId = RequireGuid(selectedGuildId, "Select a guild first.");
-            var raidTeamId = RequireGuid(selectedRaidTeamId, "Select a raid team first.");
-            var playerId = RequireGuid(selectedPlayerId, "Select a player first.");
+            if (!TryReadGuid(selectedGuildId, "Select a guild first.", out var guildId)
+                || !TryReadGuid(selectedRaidTeamId, "Select a raid team first.", out var raidTeamId)
+                || !TryReadGuid(selectedPlayerId, "Select a player first.", out var playerId))
+            {
+                return;
+            }
 
-            EnsureSuccess(await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId)));
-            statusMessage = "Added player to raid team.";
+            await RunResultActionAsync(
+                () => AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guildId, raidTeamId, playerId)),
+                "Added player to raid team.");
         });
     }
 
@@ -351,24 +389,54 @@
             var suffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
             var guild = await CreateGuildHandler.HandleAsync(new CreateGuildCommand($"Guildwise {suffix}", "EU", "Draenor"));
             var player = await CreatePlayerHandler.HandleAsync(new CreatePlayerCommand($"Myrmi {suffix}"));
-            var character = Unwrap(await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            var createCharacterResult = await CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
                 player.Id,
                 $"Alysa{suffix[^4..]}",
                 "EU",
                 "Draenor",
                 CharacterClass.Paladin,
                 CharacterSpecialization.PaladinRetribution,
-                CharacterRole.Damage)));
+                CharacterRole.Damage));
 
-            EnsureSuccess(await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
+            if (createCharacterResult.IsFailure)
+            {
+                ShowFailure(createCharacterResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
+
+            var character = GetSuccessfulValue(createCharacterResult);
+            var setMainResult = await SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id));
+            if (setMainResult.IsFailure)
+            {
+                ShowFailure(setMainResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
+
             var raidTeam = await CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One"));
-            EnsureSuccess(await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
-            EnsureSuccess(await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
+            var addToGuildResult = await AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member));
+            if (addToGuildResult.IsFailure)
+            {
+                ShowFailure(addToGuildResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
+
+            var addToRaidTeamResult = await AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id));
+            if (addToRaidTeamResult.IsFailure)
+            {
+                ShowFailure(addToRaidTeamResult.Failure!);
+                await RefreshDataAsync();
+                return;
+            }
 
             selectedGuildId = guild.Id.ToString();
             selectedPlayerId = player.Id.ToString();
             selectedRaidTeamId = raidTeam.Id.ToString();
             statusMessage = "Seeded a complete roster flow.";
+            statusKind = "success";
+            await RefreshDataAsync();
         });
     }
 
@@ -377,15 +445,12 @@
         try
         {
             await action();
-            statusKind = "success";
         }
-        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
+        catch
         {
-            statusMessage = exception.Message;
+            statusMessage = "Unexpected failure while running the action.";
             statusKind = "error";
         }
-
-        await RefreshDataAsync();
     }
 
     private async Task RefreshDataAsync()
@@ -414,29 +479,66 @@
         }
     }
 
-    private static Guid RequireGuid(string? value, string message)
-        => Guid.TryParse(value, out var id) ? id : throw new InvalidOperationException(message);
+    private async Task RunResultActionAsync<T>(Func<Task<Result<T>>> action, string successMessage)
+    {
+        var result = await action();
+        if (result.IsFailure)
+        {
+            ShowFailure(result.Failure!);
+            return;
+        }
 
-    private static T Unwrap<T>(Result<T> result)
+        GetSuccessfulValue(result);
+        statusMessage = successMessage;
+        statusKind = "success";
+        await RefreshDataAsync();
+    }
+
+    private async Task RunResultActionAsync(Func<Task<Result>> action, string successMessage)
+    {
+        var result = await action();
+        if (result.IsFailure)
+        {
+            ShowFailure(result.Failure!);
+            return;
+        }
+
+        statusMessage = successMessage;
+        statusKind = "success";
+        await RefreshDataAsync();
+    }
+
+    private bool TryReadGuid(string? value, string message, out Guid id)
+    {
+        if (Guid.TryParse(value, out id))
+        {
+            return true;
+        }
+
+        ShowFailure(new Failure(FailureType.Validation, message));
+        return false;
+    }
+
+    private void ShowFailure(Failure failure)
+    {
+        statusMessage = $"{FormatFailureType(failure.Type)}: {failure.Message}";
+        statusKind = "error";
+    }
+
+    private static T GetSuccessfulValue<T>(Result<T> result)
         => result.IsSuccess && result.Value is not null
             ? result.Value
-            : throw new InvalidOperationException(result.Failure?.Message ?? "Application command failed.");
+            : throw new InvalidOperationException("Successful application result did not include a value.");
 
-    private static void EnsureSuccess(Result result)
-    {
-        if (result.IsFailure)
+    private static string FormatFailureType(FailureType type)
+        => type switch
         {
-            throw new InvalidOperationException(result.Failure?.Message ?? "Application command failed.");
-        }
-    }
-
-    private static void EnsureSuccess<T>(Result<T> result)
-    {
-        if (result.IsFailure)
-        {
-            throw new InvalidOperationException(result.Failure?.Message ?? "Application command failed.");
-        }
-    }
+            FailureType.NotFound => "Not found",
+            FailureType.Validation => "Validation",
+            FailureType.Conflict => "Conflict",
+            FailureType.BusinessRule => "Cannot complete action",
+            _ => "Failure"
+        };
 
     private static CharacterDto? GetMainCharacter(PlayerDto? player)
         => player is null || !player.MainCharacterId.HasValue
