@@ -1,4 +1,5 @@
 .raid-team-badge {
+    align-items: center;
     background: rgb(30 41 59 / 0.82);
     border: 1px solid rgb(215 180 106 / 0.24);
     border-radius: 999px;
@@ -6,8 +7,9 @@
     display: inline-flex;
     font-size: 0.76rem;
     font-weight: 900;
+    justify-content: center;
     line-height: 1;
-    min-height: 1.75rem;
-    padding: 0.3rem 0.58rem;
+    min-height: 2rem;
+    padding: 0 0.64rem;
     white-space: nowrap;
 }

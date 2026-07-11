@@ -80,6 +80,15 @@ Do not implement these unless a feature file explicitly says so:
 - External API DTOs must not leak into Domain.
 - EF Core attributes must not be placed on Domain entities.
 
+## Frontend UI Rules
+
+- Do not introduce a new UI framework, component library or admin template without an ADR.
+- Keep UI dependencies exclusively in `Guildwise.Web`.
+- Do not put CSS classes, color values, badge logic, icon names, Blazor types or component concepts in Domain or Application.
+- Keep Infrastructure free of UI concepts.
+- Use AdminLTE only as structural or visual inspiration, not as a direct dependency.
+- Prefer evolving existing Guildwise Web components before adding external UI libraries.
+
 ## Persistence Rules
 
 Guildwise uses PostgreSQL with EF Core for persistent storage.

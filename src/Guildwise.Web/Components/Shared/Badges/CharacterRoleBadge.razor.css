@@ -1,12 +1,14 @@
 .role-badge {
+    align-items: center;
     border: 1px solid rgb(148 163 184 / 0.28);
     border-radius: 999px;
     display: inline-flex;
     font-size: 0.78rem;
     font-weight: 900;
+    justify-content: center;
     line-height: 1;
-    min-height: 1.9rem;
-    padding: 0.34rem 0.66rem;
+    min-height: 2rem;
+    padding: 0 0.68rem;
     white-space: nowrap;
 }
 
