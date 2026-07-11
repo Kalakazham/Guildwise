@@ -209,6 +209,18 @@ AI agents must not add `Microsoft.EntityFrameworkCore.Design` to `Guildwise.Web`
 
 AI agents must use the Infrastructure design-time factory for EF Core migration commands.
 
+AI agents must not add external API clients, credentials, background jobs or sync engines without an explicit feature and ADR or feature documentation.
+
+AI agents must not put external API DTOs in Domain.
+
+AI agents must not make Application depend on concrete API clients.
+
+AI agents must not make Web call external APIs directly.
+
+AI agents must keep future roster, raid event, signup, attendance and performance features external-source-ready when those areas can later be fed by WoWAudit, Blizzard WoW API, Raider.IO or Warcraft Logs.
+
+WoWAudit, Blizzard WoW API, Raider.IO and Warcraft Logs are planned future sources, but must not be implemented without explicit implementation scope.
+
 ## Result Handling Rules
 
 * Command handlers should return `Result` or `Result<T>` for expected outcomes.

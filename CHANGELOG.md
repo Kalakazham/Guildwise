@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 ### Added
 
 - ADR for the Guildwise frontend UI stack and Web styling boundaries.
+- Documented external integration boundaries for future WoWAudit, Blizzard, Raider.IO and Warcraft Logs integrations.
 - Raid team composition polish with class overview, neutral hints and available-player controls.
 - Raid team member assignment UX for adding and removing players from raid teams.
 - Raid team management overview and in-page detail layout.

@@ -318,16 +318,28 @@ External integrations should be added behind Application interfaces.
 
 Potential providers:
 
+* WoWAudit
 * Raider.IO
 * Blizzard WoW API
 * Warcraft Logs
 * Discord
 
-External integrations should live in Infrastructure initially. If an integration becomes large enough, it can be extracted into its own project later.
+External integrations should live in Infrastructure initially. Web must not call external APIs directly, and Domain must not reference external API DTOs.
+
+Manual and imported records should remain distinguishable where conflicts or resync behavior matter. Source metadata should be introduced when a feature stores imported data.
+
+The integration boundary decision is documented in:
+
+```text
+docs/adr/0009-external-integration-boundaries.md
+```
+
+If an integration becomes large enough, it can be extracted into its own project later.
 
 Potential future projects:
 
 ```text
+Guildwise.Integrations.WoWAudit
 Guildwise.Integrations.RaiderIo
 Guildwise.Integrations.Blizzard
 Guildwise.Integrations.WarcraftLogs
