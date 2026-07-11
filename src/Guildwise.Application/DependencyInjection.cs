@@ -25,6 +25,7 @@ using Guildwise.Application.RaidTeams.GetRaidTeam;
 using Guildwise.Application.RaidTeams.ListRaidTeamsForGuild;
 using Guildwise.Application.RaidTeams.RemovePlayerFromRaidTeam;
 using Guildwise.Application.RaidTeams.UpdateRaidTeam;
+using Guildwise.Application.RosterOverview.GetRosterOverview;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Guildwise.Application;
@@ -66,6 +67,8 @@ public static class DependencyInjection
         services.AddScoped<AddPlayerToGuildHandler>();
         services.AddScoped<AddAdditionalRoleToGuildMemberHandler>();
         services.AddScoped<RemoveAdditionalRoleFromGuildMemberHandler>();
+
+        services.AddScoped<GetRosterOverviewHandler>();
 
         return services;
     }

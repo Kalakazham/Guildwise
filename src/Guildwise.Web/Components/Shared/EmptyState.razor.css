@@ -1,0 +1,25 @@
+.empty-state-panel {
+    align-items: flex-start;
+    background: rgb(15 23 42 / 0.72);
+    border: 1px dashed rgb(148 163 184 / 0.34);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.5rem;
+    padding: 1.25rem;
+}
+
+.empty-state-panel__title {
+    color: #f8fafc;
+    font-weight: 800;
+    margin: 0;
+}
+
+.empty-state-panel__message {
+    color: #a8b3c7;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.empty-state-panel__actions {
+    margin-top: 0.4rem;
+}

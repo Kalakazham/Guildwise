@@ -1,0 +1,264 @@
+@page "/roster"
+@rendermode InteractiveServer
+
+@using Guildwise.Application.Contracts.RosterOverview
+@using Guildwise.Application.RosterOverview.GetRosterOverview
+@using Guildwise.Domain
+@inject GetRosterOverviewHandler GetRosterOverviewHandler
+
+<PageTitle>Roster Overview</PageTitle>
+
+<main class="roster-overview-page">
+    <PageHeader
+        Eyebrow="Guildwise roster"
+        Title="Roster Overview"
+        Subtitle="Scan guild composition, raid team coverage and main-character readiness from the manual roster data already in Guildwise.">
+        <Actions>
+            <a class="roster-action roster-action--secondary" href="/roster-setup">Setup roster</a>
+            <button type="button" class="roster-action" @onclick="LoadRosterAsync">Refresh</button>
+        </Actions>
+    </PageHeader>
+
+    @if (isLoading)
+    {
+        <LoadingState Title="Loading roster" Message="Collecting guild, raid team, player and character data." />
+    }
+    else if (!string.IsNullOrWhiteSpace(loadFailure))
+    {
+        <ContentPanel Title="Roster unavailable">
+            <EmptyState
+                Title="Roster data could not be loaded."
+                Message="@loadFailure">
+                <Actions>
+                    <button type="button" class="roster-action" @onclick="LoadRosterAsync">Try again</button>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else if (overview is null || IsRosterEmpty(overview))
+    {
+        <ContentPanel Title="Roster">
+            <EmptyState
+                Title="No roster data yet."
+                Message="Create a guild, players, characters and a raid team through the setup view to populate this overview.">
+                <Actions>
+                    <a class="roster-action" href="/roster-setup">Open roster setup</a>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else
+    {
+        <section class="summary-grid" aria-label="Roster summary">
+            <SummaryCard Label="Guilds" Value="@overview.Summary.GuildCount.ToString()" Detail="Configured guild contexts" />
+            <SummaryCard Label="Players" Value="@overview.Summary.PlayerCount.ToString()" Detail="@($"{overview.Summary.PlayersWithMainCharacterCount} with main characters")" />
+            <SummaryCard Label="Characters" Value="@overview.Summary.CharacterCount.ToString()" Detail="Manual character records" />
+            <SummaryCard Label="Raid members" Value="@overview.Summary.RaidRosterMemberCount.ToString()" Detail="@($"{overview.Summary.RaidTeamCount} raid teams")" />
+        </section>
+
+        <section class="overview-grid">
+            <ContentPanel Title="Guild Context" Class="guild-context-panel">
+                @if (overview.Guilds.Count == 0)
+                {
+                    <EmptyState Title="No guild context." Message="Create a guild to anchor the roster overview." />
+                }
+                else
+                {
+                    <div class="guild-context-list">
+                        @foreach (var guild in overview.Guilds)
+                        {
+                            <article class="guild-context-card">
+                                <div>
+                                    <h3>@guild.Name</h3>
+                                    <p>@guild.Region - @guild.Realm</p>
+                                </div>
+                                <dl>
+                                    <div>
+                                        <dt>Raid teams</dt>
+                                        <dd>@guild.RaidTeamCount</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Members</dt>
+                                        <dd>@guild.MemberCount</dd>
+                                    </div>
+                                </dl>
+                            </article>
+                        }
+                    </div>
+                }
+            </ContentPanel>
+
+            <ContentPanel Title="Roster List" Class="roster-list-panel">
+                @if (overview.Members.Count == 0)
+                {
+                    <EmptyState Title="No players yet." Message="Add players and main characters to start building the roster." />
+                }
+                else
+                {
+                    <div class="roster-table-wrap">
+                        <table class="roster-table">
+                            <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Main character</th>
+                                <th>Class</th>
+                                <th>Role</th>
+                                <th>Main/Alt</th>
+                                <th>Guild rank</th>
+                                <th>Raid teams</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var member in overview.Members)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="player-cell">
+                                            <span>@member.PlayerDisplayName</span>
+                                            @if (!member.IsGuildMember)
+                                            {
+                                                <small>Not in guild</small>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (member.HasMainCharacter)
+                                        {
+                                            <div class="character-cell">
+                                                <span>@member.MainCharacterName</span>
+                                                <small>@member.CharacterRegion - @member.CharacterRealm</small>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">No main character</span>
+                                        }
+                                    </td>
+                                    <td>@RenderClass(member)</td>
+                                    <td>@RenderRole(member)</td>
+                                    <td>
+                                        <span class="roster-pill roster-pill--main-state">
+                                            @(member.HasMainCharacter ? "Main set" : "Needs main")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (member.GuildRank.HasValue)
+                                        {
+                                            <span>@member.GuildRank</span>
+                                            @if (member.AdditionalRoles.Count > 0)
+                                            {
+                                                <small class="role-detail">@string.Join(", ", member.AdditionalRoles)</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">None</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (member.RaidTeamNames.Count == 0)
+                                        {
+                                            <span class="muted">Unassigned</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="team-list">
+                                                @foreach (var team in member.RaidTeamNames)
+                                                {
+                                                    <span>@team</span>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </ContentPanel>
+        </section>
+    }
+</main>
+
+@code {
+    private RosterOverviewDto? overview;
+    private bool isLoading = true;
+    private string? loadFailure;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRosterAsync();
+    }
+
+    private async Task LoadRosterAsync()
+    {
+        isLoading = true;
+        loadFailure = null;
+
+        try
+        {
+            overview = await GetRosterOverviewHandler.HandleAsync(new GetRosterOverviewQuery());
+        }
+        catch
+        {
+            overview = null;
+            loadFailure = "An unexpected technical failure occurred while loading the roster overview.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static bool IsRosterEmpty(RosterOverviewDto roster)
+        => roster.Summary.GuildCount == 0
+            && roster.Summary.PlayerCount == 0
+            && roster.Summary.CharacterCount == 0
+            && roster.Summary.RaidTeamCount == 0;
+
+    private static RenderFragment RenderClass(RosterMemberDto member)
+        => builder =>
+        {
+            if (!member.CharacterClass.HasValue)
+            {
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "class", "muted");
+                builder.AddContent(2, "-");
+                builder.CloseElement();
+                return;
+            }
+
+            builder.OpenElement(3, "span");
+            builder.AddAttribute(4, "class", "roster-pill roster-pill--class");
+            builder.AddContent(5, member.CharacterClass.Value.ToString());
+            builder.CloseElement();
+        };
+
+    private static RenderFragment RenderRole(RosterMemberDto member)
+        => builder =>
+        {
+            if (!member.Role.HasValue)
+            {
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "class", "muted");
+                builder.AddContent(2, "-");
+                builder.CloseElement();
+                return;
+            }
+
+            builder.OpenElement(3, "span");
+            builder.AddAttribute(4, "class", $"roster-pill roster-pill--role roster-pill--{GetRoleClass(member.Role.Value)}");
+            builder.AddContent(5, member.Role.Value.ToString());
+            builder.CloseElement();
+        };
+
+    private static string GetRoleClass(CharacterRole role)
+        => role switch
+        {
+            CharacterRole.Tank => "tank",
+            CharacterRole.Healer => "healer",
+            CharacterRole.Damage => "damage",
+            _ => "unknown"
+        };
+}

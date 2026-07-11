@@ -1,0 +1,31 @@
+.summary-card {
+    background:
+        linear-gradient(135deg, rgb(215 180 106 / 0.14), transparent 44%),
+        rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(215 180 106 / 0.22);
+    border-radius: 8px;
+    min-height: 7.25rem;
+    padding: 1rem;
+}
+
+.summary-card__label {
+    color: #a8b3c7;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.summary-card__value {
+    color: #f8fafc;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 0.85rem;
+}
+
+.summary-card__detail {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    margin-top: 0.6rem;
+}
