@@ -177,6 +177,20 @@ Guildwise.ArchitectureTests
 * Repository interfaces belong in Application.
 * Repository implementations belong in Infrastructure.
 
+## Frontend UI Boundaries
+
+Guildwise Web currently uses custom Blazor components and custom CSS for the roster-focused UI.
+
+Admin dashboard patterns such as sidebar navigation, panels, cards, tables, forms and widgets may guide the Web layout, but AdminLTE is only a structural and visual reference, not a direct dependency.
+
+UI dependencies, display labels, badge styling and WoW class colors belong in `Guildwise.Web`. Domain, Application and Infrastructure must stay free of CSS, color, Blazor, icon and component concepts.
+
+The frontend UI stack decision is documented in:
+
+```text
+docs/adr/0008-frontend-ui-stack.md
+```
+
 ## Application Result Handling
 
 Command handlers return `Result` or `Result<T>` for expected use-case outcomes. Expected failures use `Failure` and `FailureType` values such as `NotFound`, `Validation`, `Conflict` and `BusinessRule`.

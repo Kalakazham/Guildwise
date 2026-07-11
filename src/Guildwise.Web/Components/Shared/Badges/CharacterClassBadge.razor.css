@@ -8,13 +8,15 @@
     font-size: 0.78rem;
     font-weight: 900;
     gap: 0.45rem;
+    justify-content: center;
     line-height: 1;
-    min-height: 1.9rem;
-    padding: 0.32rem 0.62rem;
+    min-height: 2rem;
+    padding: 0 0.68rem;
     white-space: nowrap;
 }
 
 .class-badge__mark {
+    align-self: center;
     background: var(--class-color);
     border-radius: 999px;
     box-shadow: 0 0 0 2px rgb(15 23 42 / 0.72);
