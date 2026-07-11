@@ -1,0 +1,19 @@
+<article class="summary-card">
+    <div class="summary-card__label">@Label</div>
+    <div class="summary-card__value">@Value</div>
+    @if (!string.IsNullOrWhiteSpace(Detail))
+    {
+        <div class="summary-card__detail">@Detail</div>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Detail { get; set; }
+}

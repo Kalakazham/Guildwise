@@ -1,3 +1,126 @@
+.app-shell {
+    background: #050914;
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    background:
+        linear-gradient(180deg, rgb(215 180 106 / 0.08), transparent 16rem),
+        linear-gradient(180deg, #0b1220, #070b14);
+    border-right: 1px solid rgb(215 180 106 / 0.16);
+    box-shadow: 12px 0 32px rgb(0 0 0 / 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    padding: 1.35rem 1.15rem;
+}
+
+.app-brand {
+    align-items: center;
+    border-bottom: 1px solid rgb(148 163 184 / 0.12);
+    color: #f8fafc;
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.1rem 0 1.15rem;
+    text-decoration: none;
+}
+
+.app-brand__mark {
+    align-items: center;
+    background: linear-gradient(135deg, #f0d58a, #b88931);
+    border: 1px solid rgb(255 255 255 / 0.18);
+    border-radius: 8px;
+    color: #111827;
+    display: inline-flex;
+    font-weight: 900;
+    height: 2.6rem;
+    justify-content: center;
+    width: 2.6rem;
+}
+
+.app-brand strong,
+.app-brand small {
+    display: block;
+}
+
+.app-brand small {
+    color: #a8b3c7;
+    font-size: 0.78rem;
+    margin-top: 0.15rem;
+}
+
+.app-nav {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.app-nav a {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #a8b3c7;
+    display: flex;
+    font-weight: 800;
+    min-height: 2.7rem;
+    padding: 0.72rem 0.85rem;
+    position: relative;
+    text-decoration: none;
+}
+
+.app-nav a::before {
+    background: transparent;
+    border-radius: 999px;
+    content: "";
+    height: 1.1rem;
+    margin-right: 0.65rem;
+    width: 0.22rem;
+}
+
+.app-nav a:hover {
+    background: rgb(30 41 59 / 0.62);
+    border-color: rgb(148 163 184 / 0.16);
+    color: #f8fafc;
+}
+
+.app-nav a.active {
+    background: rgb(215 180 106 / 0.14);
+    border-color: rgb(215 180 106 / 0.24);
+    color: #f7d98b;
+}
+
+.app-nav a.active::before {
+    background: #d7b46a;
+}
+
+.app-content {
+    min-width: 0;
+}
+
+@media (max-width: 860px) {
+    .app-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .app-sidebar {
+        border-bottom: 1px solid rgb(215 180 106 / 0.16);
+        border-right: 0;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .app-brand {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .app-nav {
+        display: flex;
+        flex-wrap: wrap;
+    }
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
@@ -12,9 +135,9 @@
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}

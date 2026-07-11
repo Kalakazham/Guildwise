@@ -1,0 +1,37 @@
+.role-badge {
+    align-items: center;
+    border: 1px solid rgb(148 163 184 / 0.28);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 900;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2rem;
+    padding: 0 0.68rem;
+    white-space: nowrap;
+}
+
+.role-badge--tank {
+    background: rgb(37 99 235 / 0.18);
+    border-color: rgb(96 165 250 / 0.42);
+    color: #bfdbfe;
+}
+
+.role-badge--healer {
+    background: rgb(22 163 74 / 0.18);
+    border-color: rgb(74 222 128 / 0.36);
+    color: #bbf7d0;
+}
+
+.role-badge--damage {
+    background: rgb(220 38 38 / 0.18);
+    border-color: rgb(248 113 113 / 0.38);
+    color: #fecaca;
+}
+
+.role-badge--unknown {
+    background: rgb(51 65 85 / 0.62);
+    border-color: rgb(148 163 184 / 0.24);
+    color: #94a3b8;
+}

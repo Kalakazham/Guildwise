@@ -1,0 +1,15 @@
+.guild-role-badge {
+    align-items: center;
+    background: rgb(14 165 233 / 0.14);
+    border: 1px solid rgb(56 189 248 / 0.3);
+    border-radius: 999px;
+    color: #bae6fd;
+    display: inline-flex;
+    font-size: 0.74rem;
+    font-weight: 900;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2rem;
+    padding: 0 0.62rem;
+    white-space: nowrap;
+}

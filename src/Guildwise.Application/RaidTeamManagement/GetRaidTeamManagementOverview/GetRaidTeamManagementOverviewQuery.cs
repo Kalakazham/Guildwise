@@ -1,0 +1,3 @@
+namespace Guildwise.Application.RaidTeamManagement.GetRaidTeamManagementOverview;
+
+public sealed record GetRaidTeamManagementOverviewQuery;

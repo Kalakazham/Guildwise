@@ -80,6 +80,15 @@ Do not implement these unless a feature file explicitly says so:
 - External API DTOs must not leak into Domain.
 - EF Core attributes must not be placed on Domain entities.
 
+## Frontend UI Rules
+
+- Do not introduce a new UI framework, component library or admin template without an ADR.
+- Keep UI dependencies exclusively in `Guildwise.Web`.
+- Do not put CSS classes, color values, badge logic, icon names, Blazor types or component concepts in Domain or Application.
+- Keep Infrastructure free of UI concepts.
+- Use AdminLTE only as structural or visual inspiration, not as a direct dependency.
+- Prefer evolving existing Guildwise Web components before adding external UI libraries.
+
 ## Persistence Rules
 
 Guildwise uses PostgreSQL with EF Core for persistent storage.
@@ -199,6 +208,18 @@ AI agents must not add EF Core attributes to Domain entities.
 AI agents must not add `Microsoft.EntityFrameworkCore.Design` to `Guildwise.Web` unless explicitly instructed.
 
 AI agents must use the Infrastructure design-time factory for EF Core migration commands.
+
+AI agents must not add external API clients, credentials, background jobs or sync engines without an explicit feature and ADR or feature documentation.
+
+AI agents must not put external API DTOs in Domain.
+
+AI agents must not make Application depend on concrete API clients.
+
+AI agents must not make Web call external APIs directly.
+
+AI agents must keep future roster, raid event, signup, attendance and performance features external-source-ready when those areas can later be fed by WoWAudit, Blizzard WoW API, Raider.IO or Warcraft Logs.
+
+WoWAudit, Blizzard WoW API, Raider.IO and Warcraft Logs are planned future sources, but must not be implemented without explicit implementation scope.
 
 ## Result Handling Rules
 

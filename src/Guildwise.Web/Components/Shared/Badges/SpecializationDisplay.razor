@@ -1,0 +1,11 @@
+@using Guildwise.Domain
+
+@if (Value.HasValue && Value.Value != CharacterSpecialization.Unknown)
+{
+    <small class="specialization-display">@RosterDisplayText.CharacterSpecialization(Value.Value)</small>
+}
+
+@code {
+    [Parameter]
+    public CharacterSpecialization? Value { get; set; }
+}

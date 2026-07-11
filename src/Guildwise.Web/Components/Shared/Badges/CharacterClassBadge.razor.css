@@ -1,0 +1,31 @@
+.class-badge {
+    align-items: center;
+    background: color-mix(in srgb, var(--class-color) 18%, #0f172a);
+    border: 1px solid color-mix(in srgb, var(--class-color) 56%, #334155);
+    border-radius: 999px;
+    color: #f8fafc;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 900;
+    gap: 0.45rem;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2rem;
+    padding: 0 0.68rem;
+    white-space: nowrap;
+}
+
+.class-badge__mark {
+    align-self: center;
+    background: var(--class-color);
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px rgb(15 23 42 / 0.72);
+    height: 0.58rem;
+    width: 0.58rem;
+}
+
+.class-badge--empty {
+    background: rgb(51 65 85 / 0.62);
+    border-color: rgb(148 163 184 / 0.24);
+    color: #94a3b8;
+}

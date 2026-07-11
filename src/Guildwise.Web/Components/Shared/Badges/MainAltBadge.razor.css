@@ -1,0 +1,25 @@
+.main-alt-badge {
+    align-items: center;
+    border: 1px solid rgb(148 163 184 / 0.26);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 900;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2rem;
+    padding: 0 0.68rem;
+    white-space: nowrap;
+}
+
+.main-alt-badge--ready {
+    background: rgb(215 180 106 / 0.16);
+    border-color: rgb(215 180 106 / 0.38);
+    color: #f7d98b;
+}
+
+.main-alt-badge--missing {
+    background: rgb(148 163 184 / 0.12);
+    border-color: rgb(148 163 184 / 0.24);
+    color: #cbd5e1;
+}

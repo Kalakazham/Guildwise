@@ -1,9 +1,35 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-@Body
+<div class="app-shell">
+    <aside class="app-sidebar" aria-label="Guildwise navigation">
+        <a class="app-brand" href="@RosterHref">
+            <span class="app-brand__mark">GW</span>
+            <span>
+                <strong>Guildwise</strong>
+                <small>Roster command</small>
+            </span>
+        </a>
+
+        <nav class="app-nav">
+            <NavLink href="@RosterHref" Match="NavLinkMatch.All">Roster overview</NavLink>
+            <NavLink href="@RaidTeamsHref">Raid Teams</NavLink>
+            <NavLink href="@RosterSetupHref">Roster setup</NavLink>
+        </nav>
+    </aside>
+
+    <div class="app-content">
+        @Body
+    </div>
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">x</span>
 </div>
+
+@code {
+    private const string RosterHref = "roster";
+    private const string RaidTeamsHref = "raid-teams";
+    private const string RosterSetupHref = "roster-setup";
+}

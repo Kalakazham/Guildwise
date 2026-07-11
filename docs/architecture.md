@@ -177,6 +177,20 @@ Guildwise.ArchitectureTests
 * Repository interfaces belong in Application.
 * Repository implementations belong in Infrastructure.
 
+## Frontend UI Boundaries
+
+Guildwise Web currently uses custom Blazor components and custom CSS for the roster-focused UI.
+
+Admin dashboard patterns such as sidebar navigation, panels, cards, tables, forms and widgets may guide the Web layout, but AdminLTE is only a structural and visual reference, not a direct dependency.
+
+UI dependencies, display labels, badge styling and WoW class colors belong in `Guildwise.Web`. Domain, Application and Infrastructure must stay free of CSS, color, Blazor, icon and component concepts.
+
+The frontend UI stack decision is documented in:
+
+```text
+docs/adr/0008-frontend-ui-stack.md
+```
+
 ## Application Result Handling
 
 Command handlers return `Result` or `Result<T>` for expected use-case outcomes. Expected failures use `Failure` and `FailureType` values such as `NotFound`, `Validation`, `Conflict` and `BusinessRule`.
@@ -304,16 +318,28 @@ External integrations should be added behind Application interfaces.
 
 Potential providers:
 
+* WoWAudit
 * Raider.IO
 * Blizzard WoW API
 * Warcraft Logs
 * Discord
 
-External integrations should live in Infrastructure initially. If an integration becomes large enough, it can be extracted into its own project later.
+External integrations should live in Infrastructure initially. Web must not call external APIs directly, and Domain must not reference external API DTOs.
+
+Manual and imported records should remain distinguishable where conflicts or resync behavior matter. Source metadata should be introduced when a feature stores imported data.
+
+The integration boundary decision is documented in:
+
+```text
+docs/adr/0009-external-integration-boundaries.md
+```
+
+If an integration becomes large enough, it can be extracted into its own project later.
 
 Potential future projects:
 
 ```text
+Guildwise.Integrations.WoWAudit
 Guildwise.Integrations.RaiderIo
 Guildwise.Integrations.Blizzard
 Guildwise.Integrations.WarcraftLogs

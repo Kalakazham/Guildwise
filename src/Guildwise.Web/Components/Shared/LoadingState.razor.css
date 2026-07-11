@@ -1,0 +1,39 @@
+.loading-state {
+    align-items: center;
+    background: rgb(15 23 42 / 0.72);
+    border: 1px solid rgb(148 163 184 / 0.16);
+    border-radius: 8px;
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.loading-state__bar {
+    animation: pulse 1.1s ease-in-out infinite;
+    background: #d7b46a;
+    border-radius: 999px;
+    height: 2.75rem;
+    width: 0.35rem;
+}
+
+.loading-state__title {
+    color: #f8fafc;
+    font-weight: 800;
+    margin: 0;
+}
+
+.loading-state__message {
+    color: #a8b3c7;
+    margin: 0.25rem 0 0;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.35;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}

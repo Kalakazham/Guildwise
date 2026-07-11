@@ -1,0 +1,17 @@
+@using Guildwise.Domain
+
+@if (!Value.HasValue || Value.Value == CharacterRole.Unknown)
+{
+    <span class="role-badge role-badge--unknown">No role</span>
+}
+else
+{
+    var label = RosterDisplayText.CharacterRole(Value.Value);
+    var token = RosterDisplayText.CharacterRoleToken(Value.Value);
+    <span class="role-badge role-badge--@token" title="@($"{label} role")">@label</span>
+}
+
+@code {
+    [Parameter]
+    public CharacterRole? Value { get; set; }
+}
