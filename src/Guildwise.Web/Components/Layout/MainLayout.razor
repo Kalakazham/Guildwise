@@ -12,6 +12,7 @@
 
         <nav class="app-nav">
             <NavLink href="@RosterHref" Match="NavLinkMatch.All">Roster overview</NavLink>
+            <NavLink href="@RaidTeamsHref">Raid Teams</NavLink>
             <NavLink href="@RosterSetupHref">Roster setup</NavLink>
         </nav>
     </aside>
@@ -29,5 +30,6 @@
 
 @code {
     private const string RosterHref = "roster";
+    private const string RaidTeamsHref = "raid-teams";
     private const string RosterSetupHref = "roster-setup";
 }

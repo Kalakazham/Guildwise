@@ -1,0 +1,289 @@
+.raid-team-management-page {
+    background:
+        radial-gradient(circle at 12% 0%, rgb(215 180 106 / 0.18), transparent 30%),
+        radial-gradient(circle at 88% 20%, rgb(163 48 201 / 0.1), transparent 28%),
+        linear-gradient(180deg, #111827 0%, #07111f 44%, #050914 100%);
+    color: #e5e7eb;
+    display: grid;
+    gap: 1.35rem;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.raid-action {
+    align-items: center;
+    background: #d7b46a;
+    border: 1px solid #f0d58a;
+    border-radius: 6px;
+    color: #111827;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+}
+
+.raid-action:hover {
+    background: #f0d58a;
+}
+
+.raid-action--secondary {
+    background: rgb(15 23 42 / 0.84);
+    border-color: rgb(148 163 184 / 0.32);
+    color: #e5e7eb;
+}
+
+.raid-action--secondary:hover {
+    background: rgb(30 41 59 / 0.96);
+}
+
+.raid-summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.raid-management-grid {
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: minmax(18rem, 0.75fr) minmax(0, 1.55fr);
+}
+
+.raid-management-sidebar {
+    align-content: start;
+    display: grid;
+    gap: 1.1rem;
+}
+
+.guild-context-block {
+    display: grid;
+    gap: 1rem;
+}
+
+.guild-context-block__label,
+.guild-selector {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.guild-context-block h2 {
+    color: #f8fafc;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.guild-context-block p {
+    color: #a8b3c7;
+    margin: 0.35rem 0 0;
+}
+
+.guild-selector {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.guild-selector select {
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 6px;
+    color: #f8fafc;
+    font: inherit;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+}
+
+.guild-selector select:focus,
+.raid-action:focus,
+.team-list-item:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.team-list-panel {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.team-list-item {
+    background: rgb(2 6 23 / 0.52);
+    border: 1px solid rgb(148 163 184 / 0.16);
+    border-radius: 8px;
+    color: #e5e7eb;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: 0.55rem;
+    padding: 0.9rem;
+    text-align: left;
+    width: 100%;
+}
+
+.team-list-item:hover,
+.team-list-item--selected {
+    background: rgb(30 41 59 / 0.64);
+    border-color: rgb(215 180 106 / 0.42);
+}
+
+.team-list-item__name {
+    color: #f8fafc;
+    font-weight: 900;
+}
+
+.team-list-item__meta {
+    color: #a8b3c7;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.team-composition-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.team-composition-strip span {
+    background: rgb(15 23 42 / 0.9);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 999px;
+    color: #cbd5e1;
+    font-size: 0.74rem;
+    font-weight: 900;
+    line-height: 1;
+    padding: 0.35rem 0.5rem;
+}
+
+.team-detail-header {
+    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.team-detail-header h2 {
+    color: #f8fafc;
+    font-size: 1.45rem;
+    margin: 0.65rem 0 0.35rem;
+}
+
+.team-detail-header p {
+    color: #a8b3c7;
+    margin: 0;
+}
+
+.composition-cards {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(3, minmax(4.75rem, 1fr));
+}
+
+.composition-cards div {
+    background: rgb(2 6 23 / 0.5);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    padding: 0.8rem;
+    text-align: center;
+}
+
+.composition-cards span {
+    color: #f8fafc;
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 900;
+}
+
+.composition-cards small {
+    color: #8390a3;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.raid-member-table-wrap {
+    overflow-x: auto;
+}
+
+.raid-member-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 58rem;
+    width: 100%;
+}
+
+.raid-member-table th,
+.raid-member-table td {
+    border-bottom: 1px solid rgb(148 163 184 / 0.14);
+    padding: 0.95rem 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.raid-member-table th {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.raid-member-table tbody tr:hover {
+    background: rgb(30 41 59 / 0.42);
+}
+
+.player-cell,
+.character-cell {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.player-cell span,
+.character-cell span {
+    color: #f8fafc;
+    font-weight: 800;
+}
+
+.character-cell small {
+    color: #8390a3;
+    display: block;
+    font-size: 0.78rem;
+}
+
+.badge-stack {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+}
+
+.badge-cluster {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.48rem;
+}
+
+.muted {
+    color: #8390a3;
+}
+
+@media (max-width: 1080px) {
+    .raid-management-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .raid-team-management-page {
+        padding: 1rem;
+    }
+
+    .composition-cards {
+        grid-template-columns: 1fr;
+    }
+}

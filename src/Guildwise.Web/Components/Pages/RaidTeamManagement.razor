@@ -1,0 +1,314 @@
+@page "/raid-teams"
+@rendermode InteractiveServer
+
+@using Guildwise.Application.Contracts.RaidTeamManagement
+@using Guildwise.Application.RaidTeamManagement.GetRaidTeamManagementOverview
+@inject GetRaidTeamManagementOverviewHandler GetRaidTeamManagementOverviewHandler
+
+<PageTitle>Raid Teams</PageTitle>
+
+<main class="raid-team-management-page">
+    <PageHeader
+        Eyebrow="Guildwise raid management"
+        Title="Raid Teams"
+        Subtitle="Review raid team composition, guild context and team membership from the manual roster data already in Guildwise.">
+        <Actions>
+            <a class="raid-action raid-action--secondary" href="/roster">Roster overview</a>
+            <button type="button" class="raid-action" @onclick="LoadRaidTeamsAsync">Refresh</button>
+        </Actions>
+    </PageHeader>
+
+    @if (isLoading)
+    {
+        <LoadingState Title="Loading raid teams" Message="Collecting guild, raid team and player data." />
+    }
+    else if (!string.IsNullOrWhiteSpace(loadFailure))
+    {
+        <ContentPanel Title="Raid teams unavailable">
+            <EmptyState
+                Title="Raid team data could not be loaded."
+                Message="@loadFailure">
+                <Actions>
+                    <button type="button" class="raid-action" @onclick="LoadRaidTeamsAsync">Try again</button>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else if (overview is null || overview.Guilds.Count == 0)
+    {
+        <ContentPanel Title="Guild Context">
+            <EmptyState
+                Title="No guilds yet."
+                Message="Create a guild, players and raid teams through the setup view before managing raid teams.">
+                <Actions>
+                    <a class="raid-action" href="/roster-setup">Open roster setup</a>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else if (SelectedGuild is not null)
+    {
+        var guild = SelectedGuild;
+        var selectedTeam = SelectedTeam;
+
+        <section class="raid-summary-grid" aria-label="Raid team summary">
+            <SummaryCard Label="Raid Teams" Value="@guild.RaidTeamCount.ToString()" Detail="Configured for this guild" />
+            <SummaryCard Label="Raid Members" Value="@guild.RaidMemberCount.ToString()" Detail="Distinct assigned guild members" />
+            <SummaryCard Label="Unassigned" Value="@guild.UnassignedGuildMemberCount.ToString()" Detail="Guild members without a raid team" />
+            <SummaryCard Label="Missing Main" Value="@guild.PlayersWithoutMainCharacterCount.ToString()" Detail="Guild members without main character" />
+        </section>
+
+        <section class="raid-management-grid">
+            <div class="raid-management-sidebar">
+                <ContentPanel Title="Guild Context">
+                    <div class="guild-context-block">
+                        <div>
+                            <p class="guild-context-block__label">Current guild</p>
+                            <h2>@guild.Name</h2>
+                            <p>@guild.Region - @guild.Realm</p>
+                        </div>
+
+                        @if (overview.Guilds.Count > 1)
+                        {
+                            <label class="guild-selector">
+                                Manage guild
+                                <select value="@selectedGuildId" @onchange="OnGuildChanged">
+                                    @foreach (var availableGuild in overview.Guilds)
+                                    {
+                                        <option value="@availableGuild.Id">@availableGuild.Name - @availableGuild.Realm</option>
+                                    }
+                                </select>
+                            </label>
+                        }
+                    </div>
+                </ContentPanel>
+
+                <ContentPanel Title="Raid Team Overview" Class="team-overview-panel">
+                    @if (guild.Teams.Count == 0)
+                    {
+                        <EmptyState
+                            Title="No raid teams for this guild."
+                            Message="Create raid teams through the setup view to start managing team composition.">
+                            <Actions>
+                                <a class="raid-action" href="/roster-setup">Open roster setup</a>
+                            </Actions>
+                        </EmptyState>
+                    }
+                    else
+                    {
+                        <div class="team-list-panel" role="list" aria-label="Raid teams">
+                            @foreach (var team in guild.Teams)
+                            {
+                                var isSelected = selectedTeam?.Id == team.Id;
+
+                                <button
+                                    type="button"
+                                    class="team-list-item @(isSelected ? "team-list-item--selected" : string.Empty)"
+                                    @onclick="() => SelectTeam(team.Id)"
+                                    aria-pressed="@isSelected">
+                                    <span class="team-list-item__name">@team.Name</span>
+                                    <span class="team-list-item__meta">@team.MemberCount members</span>
+                                    <span class="team-composition-strip">
+                                        <span>@team.Composition.TankCount Tank</span>
+                                        <span>@team.Composition.HealerCount Healer</span>
+                                        <span>@team.Composition.DamageCount DPS</span>
+                                    </span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </ContentPanel>
+            </div>
+
+            <ContentPanel Title="Team Detail" Class="team-detail-panel">
+                @if (guild.Teams.Count == 0)
+                {
+                    <EmptyState
+                        Title="Select a raid team."
+                        Message="This guild does not have raid teams yet." />
+                }
+                else if (selectedTeam is null)
+                {
+                    <EmptyState
+                        Title="No raid team selected."
+                        Message="Choose a raid team from the overview to inspect its members." />
+                }
+                else
+                {
+                    <div class="team-detail-header">
+                        <div>
+                            <RaidTeamBadge Name="@selectedTeam.Name" />
+                            <h2>@selectedTeam.Name</h2>
+                            <p>@selectedTeam.MemberCount members assigned to this raid team.</p>
+                        </div>
+                        <div class="composition-cards" aria-label="Role composition">
+                            <div>
+                                <span>@selectedTeam.Composition.TankCount</span>
+                                <small>Tanks</small>
+                            </div>
+                            <div>
+                                <span>@selectedTeam.Composition.HealerCount</span>
+                                <small>Healers</small>
+                            </div>
+                            <div>
+                                <span>@selectedTeam.Composition.DamageCount</span>
+                                <small>DPS</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (selectedTeam.Members.Count == 0)
+                    {
+                        <EmptyState
+                            Title="No members in this raid team yet."
+                            Message="Players can be assigned to raid teams in a later member assignment slice." />
+                    }
+                    else
+                    {
+                        <div class="raid-member-table-wrap">
+                            <table class="raid-member-table">
+                                <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Main character</th>
+                                    <th>Class</th>
+                                    <th>Role</th>
+                                    <th>Main</th>
+                                    <th>Guild rank</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var member in selectedTeam.Members)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="player-cell">
+                                                <span>@member.PlayerDisplayName</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (member.HasMainCharacter)
+                                            {
+                                                <div class="character-cell">
+                                                    <span>@member.MainCharacterName</span>
+                                                    <small>@member.CharacterRegion - @member.CharacterRealm</small>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="muted">No main character</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="badge-stack">
+                                                <CharacterClassBadge Value="member.CharacterClass" />
+                                                <SpecializationDisplay Value="member.Specialization" />
+                                            </div>
+                                        </td>
+                                        <td><CharacterRoleBadge Value="member.Role" /></td>
+                                        <td><MainAltBadge HasMainCharacter="member.HasMainCharacter" /></td>
+                                        <td>
+                                            <div class="badge-cluster">
+                                                <GuildRankBadge Value="member.GuildRank" />
+                                                @foreach (var role in member.AdditionalRoles)
+                                                {
+                                                    <GuildRoleBadge Value="role" />
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </ContentPanel>
+        </section>
+    }
+</main>
+
+@code {
+    private RaidTeamManagementOverviewDto? overview;
+    private bool isLoading = true;
+    private string? loadFailure;
+    private Guid? selectedGuildId;
+    private Guid? selectedRaidTeamId;
+
+    private RaidTeamManagementGuildDto? SelectedGuild
+        => overview?.Guilds.FirstOrDefault(guild => guild.Id == selectedGuildId);
+
+    private RaidTeamManagementTeamDto? SelectedTeam
+        => SelectedGuild?.Teams.FirstOrDefault(team => team.Id == selectedRaidTeamId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaidTeamsAsync();
+    }
+
+    private async Task LoadRaidTeamsAsync()
+    {
+        isLoading = true;
+        loadFailure = null;
+
+        try
+        {
+            overview = await GetRaidTeamManagementOverviewHandler.HandleAsync(new GetRaidTeamManagementOverviewQuery());
+            EnsureSelection();
+        }
+        catch
+        {
+            overview = null;
+            selectedGuildId = null;
+            selectedRaidTeamId = null;
+            loadFailure = "An unexpected technical failure occurred while loading raid team management data.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnGuildChanged(ChangeEventArgs args)
+    {
+        if (!Guid.TryParse(args.Value?.ToString(), out var guildId))
+        {
+            return;
+        }
+
+        selectedGuildId = guildId;
+        selectedRaidTeamId = SelectedGuild?.Teams.FirstOrDefault()?.Id;
+    }
+
+    private void SelectTeam(Guid teamId)
+    {
+        selectedRaidTeamId = teamId;
+    }
+
+    private void EnsureSelection()
+    {
+        if (overview is null || overview.Guilds.Count == 0)
+        {
+            selectedGuildId = null;
+            selectedRaidTeamId = null;
+            return;
+        }
+
+        if (selectedGuildId is null || overview.Guilds.All(guild => guild.Id != selectedGuildId.Value))
+        {
+            selectedGuildId = overview.Guilds.First().Id;
+        }
+
+        var selectedGuild = SelectedGuild;
+        if (selectedGuild is null || selectedGuild.Teams.Count == 0)
+        {
+            selectedRaidTeamId = null;
+            return;
+        }
+
+        if (selectedRaidTeamId is null || selectedGuild.Teams.All(team => team.Id != selectedRaidTeamId.Value))
+        {
+            selectedRaidTeamId = selectedGuild.Teams.First().Id;
+        }
+    }
+}
