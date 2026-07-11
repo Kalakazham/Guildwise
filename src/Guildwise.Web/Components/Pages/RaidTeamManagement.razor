@@ -142,6 +142,10 @@
                 else
                 {
                     var availablePlayers = GetAvailablePlayersForSelectedTeam();
+                    var visibleAvailablePlayers = GetVisibleAvailablePlayers();
+                    var classOverview = GetClassOverview(selectedTeam);
+                    var compositionHints = GetCompositionHints(selectedTeam);
+                    var membersWithoutMain = CountMembersWithoutMain(selectedTeam);
 
                     <div class="team-detail-header">
                         <div>
@@ -150,6 +154,10 @@
                             <p>@selectedTeam.MemberCount members assigned to this raid team.</p>
                         </div>
                         <div class="composition-cards" aria-label="Role composition">
+                            <div>
+                                <span>@selectedTeam.MemberCount</span>
+                                <small>Total</small>
+                            </div>
                             <div>
                                 <span>@selectedTeam.Composition.TankCount</span>
                                 <small>Tanks</small>
@@ -162,7 +170,50 @@
                                 <span>@selectedTeam.Composition.DamageCount</span>
                                 <small>DPS</small>
                             </div>
+                            <div>
+                                <span>@membersWithoutMain</span>
+                                <small>Missing Main</small>
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="composition-insights">
+                        <section class="composition-insight-card" aria-label="Class overview">
+                            <h3>Class Overview</h3>
+                            @if (classOverview.Count == 0)
+                            {
+                                <p class="muted">No class data available for this team.</p>
+                            }
+                            else
+                            {
+                                <div class="class-overview-list">
+                                    @foreach (var item in classOverview)
+                                    {
+                                        <div class="class-overview-item">
+                                            <CharacterClassBadge Value="item.CharacterClass" />
+                                            <span>@item.Count</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </section>
+
+                        <section class="composition-insight-card" aria-label="Composition hints">
+                            <h3>Composition Hints</h3>
+                            @if (compositionHints.Count == 0)
+                            {
+                                <p class="muted">No composition hints for this team.</p>
+                            }
+                            else
+                            {
+                                <div class="composition-hint-list">
+                                    @foreach (var hint in compositionHints)
+                                    {
+                                        <span class="composition-hint">@hint</span>
+                                    }
+                                </div>
+                            }
+                        </section>
                     </div>
 
                     @if (!string.IsNullOrWhiteSpace(actionMessage))
@@ -264,8 +315,71 @@
                         }
                         else
                         {
+                            <div class="available-player-controls" aria-label="Available guild member search and filters">
+                                <div class="available-player-controls__summary">
+                                    <span>Showing @visibleAvailablePlayers.Count of @availablePlayers.Count available guild members</span>
+                                    @if (HasActiveAvailablePlayerControls)
+                                    {
+                                        <button type="button" class="raid-link-action" @onclick="ResetAvailablePlayerControls">Reset controls</button>
+                                    }
+                                </div>
+
+                                <div class="available-player-controls__grid">
+                                    <label class="available-player-control available-player-control--wide">
+                                        Search
+                                        <input
+                                            @bind="availableSearchText"
+                                            @bind:event="oninput"
+                                            placeholder="Player, main character, realm, raid team" />
+                                    </label>
+
+                                    <label class="available-player-control">
+                                        Class
+                                        <select @bind="selectedAvailableClass">
+                                            <option value="@AllFilterValue">All classes</option>
+                                            @foreach (var characterClass in AvailablePlayerClasses)
+                                            {
+                                                <option value="@characterClass.ToString()">@RosterDisplayText.CharacterClass(characterClass)</option>
+                                            }
+                                        </select>
+                                    </label>
+
+                                    <label class="available-player-control">
+                                        Role
+                                        <select @bind="selectedAvailableRole">
+                                            <option value="@AllFilterValue">All roles</option>
+                                            @foreach (var role in StableRoles)
+                                            {
+                                                <option value="@role.ToString()">@RosterDisplayText.CharacterRole(role)</option>
+                                            }
+                                        </select>
+                                    </label>
+
+                                    <label class="available-player-control">
+                                        Main
+                                        <select @bind="selectedAvailableMainState">
+                                            <option value="@AllFilterValue">All main states</option>
+                                            <option value="@HasMainFilterValue">Has main</option>
+                                            <option value="@MissingMainFilterValue">Missing main</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+
+                            @if (visibleAvailablePlayers.Count == 0)
+                            {
+                                <EmptyState
+                                    Title="No matching available players."
+                                    Message="No available guild members match the current search and filters. Reset the controls or broaden the search.">
+                                    <Actions>
+                                        <button type="button" class="raid-action" @onclick="ResetAvailablePlayerControls">Reset controls</button>
+                                    </Actions>
+                                </EmptyState>
+                            }
+                            else
+                            {
                             <div class="available-player-list">
-                                @foreach (var player in availablePlayers)
+                                @foreach (var player in visibleAvailablePlayers)
                                 {
                                     <article class="available-player-card">
                                         <div class="available-player-card__identity">
@@ -312,6 +426,7 @@
                                     </article>
                                 }
                             </div>
+                            }
                         }
                     </section>
                 }
@@ -321,6 +436,17 @@
 </main>
 
 @code {
+    private const string AllFilterValue = "all";
+    private const string HasMainFilterValue = "has-main";
+    private const string MissingMainFilterValue = "missing-main";
+
+    private static readonly IReadOnlyList<CharacterRole> StableRoles =
+    [
+        CharacterRole.Tank,
+        CharacterRole.Healer,
+        CharacterRole.Damage
+    ];
+
     private RaidTeamManagementOverviewDto? overview;
     private bool isLoading = true;
     private string? loadFailure;
@@ -329,12 +455,30 @@
     private string actionStatus = "success";
     private Guid? selectedGuildId;
     private Guid? selectedRaidTeamId;
+    private string availableSearchText = string.Empty;
+    private string selectedAvailableClass = AllFilterValue;
+    private string selectedAvailableRole = AllFilterValue;
+    private string selectedAvailableMainState = AllFilterValue;
 
     private RaidTeamManagementGuildDto? SelectedGuild
         => overview?.Guilds.FirstOrDefault(guild => guild.Id == selectedGuildId);
 
     private RaidTeamManagementTeamDto? SelectedTeam
         => SelectedGuild?.Teams.FirstOrDefault(team => team.Id == selectedRaidTeamId);
+
+    private bool HasActiveAvailablePlayerControls
+        => !string.IsNullOrWhiteSpace(availableSearchText)
+            || selectedAvailableClass != AllFilterValue
+            || selectedAvailableRole != AllFilterValue
+            || selectedAvailableMainState != AllFilterValue;
+
+    private IReadOnlyList<CharacterClass> AvailablePlayerClasses
+        => GetAvailablePlayersForSelectedTeam()
+            .Where(player => player.CharacterClass.HasValue)
+            .Select(player => player.CharacterClass!.Value)
+            .Distinct()
+            .OrderBy(RosterDisplayText.CharacterClass, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
     private IReadOnlyList<AvailableRaidTeamPlayerDto> GetAvailablePlayersForSelectedTeam()
     {
@@ -347,6 +491,20 @@
 
         return selectedGuild.AvailablePlayers
             .Where(player => !player.RaidTeamIds.Contains(selectedTeam.Id))
+            .OrderBy(player => player.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(player => player.PlayerId)
+            .ToList();
+    }
+
+    private IReadOnlyList<AvailableRaidTeamPlayerDto> GetVisibleAvailablePlayers()
+    {
+        var players = GetAvailablePlayersForSelectedTeam()
+            .Where(MatchesAvailableSearch)
+            .Where(MatchesAvailableClass)
+            .Where(MatchesAvailableRole)
+            .Where(MatchesAvailableMainState);
+
+        return players
             .OrderBy(player => player.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(player => player.PlayerId)
             .ToList();
@@ -462,12 +620,14 @@
         selectedGuildId = guildId;
         selectedRaidTeamId = SelectedGuild?.Teams.FirstOrDefault()?.Id;
         actionMessage = null;
+        ResetAvailablePlayerControls();
     }
 
     private void SelectTeam(Guid teamId)
     {
         selectedRaidTeamId = teamId;
         actionMessage = null;
+        ResetAvailablePlayerControls();
     }
 
     private void EnsureSelection()
@@ -537,4 +697,86 @@
         => player.HasMainCharacter
             ? $"Add {player.PlayerDisplayName} to the selected raid team"
             : "Player needs a main character before joining a raid team";
+
+    private bool MatchesAvailableSearch(AvailableRaidTeamPlayerDto player)
+    {
+        if (string.IsNullOrWhiteSpace(availableSearchText))
+        {
+            return true;
+        }
+
+        var search = availableSearchText.Trim();
+        return ContainsSearch(player.PlayerDisplayName, search)
+            || ContainsSearch(player.MainCharacterName, search)
+            || ContainsSearch(player.CharacterRealm, search)
+            || player.RaidTeamNames.Any(teamName => ContainsSearch(teamName, search));
+    }
+
+    private bool MatchesAvailableClass(AvailableRaidTeamPlayerDto player)
+        => selectedAvailableClass == AllFilterValue
+            || player.CharacterClass?.ToString() == selectedAvailableClass;
+
+    private bool MatchesAvailableRole(AvailableRaidTeamPlayerDto player)
+        => selectedAvailableRole == AllFilterValue
+            || player.Role?.ToString() == selectedAvailableRole;
+
+    private bool MatchesAvailableMainState(AvailableRaidTeamPlayerDto player)
+        => selectedAvailableMainState switch
+        {
+            HasMainFilterValue => player.HasMainCharacter,
+            MissingMainFilterValue => !player.HasMainCharacter,
+            _ => true
+        };
+
+    private void ResetAvailablePlayerControls()
+    {
+        availableSearchText = string.Empty;
+        selectedAvailableClass = AllFilterValue;
+        selectedAvailableRole = AllFilterValue;
+        selectedAvailableMainState = AllFilterValue;
+    }
+
+    private static bool ContainsSearch(string? value, string search)
+        => !string.IsNullOrWhiteSpace(value)
+            && value.Contains(search, StringComparison.OrdinalIgnoreCase);
+
+    private static IReadOnlyList<ClassOverviewItem> GetClassOverview(RaidTeamManagementTeamDto team)
+        => team.Members
+            .Where(member => member.HasMainCharacter && member.CharacterClass.HasValue)
+            .GroupBy(member => member.CharacterClass!.Value)
+            .Select(group => new ClassOverviewItem(group.Key, group.Count()))
+            .OrderBy(item => RosterDisplayText.CharacterClass(item.CharacterClass), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private static IReadOnlyList<string> GetCompositionHints(RaidTeamManagementTeamDto team)
+    {
+        var hints = new List<string>();
+        if (team.Composition.TankCount == 0)
+        {
+            hints.Add("No tank assigned");
+        }
+
+        if (team.Composition.HealerCount == 0)
+        {
+            hints.Add("No healer assigned");
+        }
+
+        if (team.Composition.DamageCount == 0)
+        {
+            hints.Add("No DPS assigned");
+        }
+
+        var membersWithoutMain = CountMembersWithoutMain(team);
+        if (membersWithoutMain > 0)
+        {
+            hints.Add($"{membersWithoutMain} members without main character");
+        }
+
+        return hints;
+    }
+
+    private static int CountMembersWithoutMain(RaidTeamManagementTeamDto team)
+        => team.Members.Count(member => !member.HasMainCharacter);
+
+    private sealed record ClassOverviewItem(CharacterClass CharacterClass, int Count);
 }

@@ -182,7 +182,7 @@
 .composition-cards {
     display: grid;
     gap: 0.65rem;
-    grid-template-columns: repeat(3, minmax(4.75rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(5.25rem, 1fr));
 }
 
 .composition-cards div {
@@ -205,6 +205,65 @@
     font-size: 0.72rem;
     font-weight: 900;
     text-transform: uppercase;
+}
+
+.composition-insights {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-bottom: 1rem;
+}
+
+.composition-insight-card {
+    background: rgb(2 6 23 / 0.38);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.95rem;
+}
+
+.composition-insight-card h3 {
+    color: #f8fafc;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.class-overview-list,
+.composition-hint-list {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.class-overview-item {
+    align-items: center;
+    background: rgb(15 23 42 / 0.72);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.35rem;
+}
+
+.class-overview-item > span {
+    color: #f8fafc;
+    font-size: 0.9rem;
+    font-weight: 900;
+    min-width: 1.35rem;
+    text-align: center;
+}
+
+.composition-hint {
+    background: rgb(215 180 106 / 0.12);
+    border: 1px solid rgb(215 180 106 / 0.28);
+    border-radius: 999px;
+    color: #fde68a;
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1;
+    padding: 0.45rem 0.6rem;
 }
 
 .raid-status-message {
@@ -342,6 +401,86 @@
     margin: 0.35rem 0 0;
 }
 
+.available-player-controls {
+    background: rgb(2 6 23 / 0.38);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.9rem;
+    padding: 0.95rem;
+}
+
+.available-player-controls__summary {
+    align-items: center;
+    color: #a8b3c7;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    font-weight: 800;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.available-player-controls__grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+}
+
+.available-player-control {
+    color: #cbd5e1;
+    display: grid;
+    font-size: 0.76rem;
+    font-weight: 900;
+    gap: 0.4rem;
+    text-transform: uppercase;
+}
+
+.available-player-control--wide {
+    grid-column: span 2;
+}
+
+.available-player-control input,
+.available-player-control select {
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 6px;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 0.9rem;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+}
+
+.available-player-control input:focus,
+.available-player-control select:focus,
+.raid-link-action:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.available-player-control input::placeholder {
+    color: #64748b;
+}
+
+.raid-link-action {
+    background: transparent;
+    border: 0;
+    color: #f7d98b;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 900;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.18rem;
+}
+
+.raid-link-action:hover {
+    color: #fde68a;
+}
+
 .available-player-list {
     display: grid;
     gap: 0.75rem;
@@ -389,6 +528,10 @@
     .raid-management-grid {
         grid-template-columns: 1fr;
     }
+
+    .composition-insights {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 700px) {
@@ -398,6 +541,10 @@
 
     .composition-cards {
         grid-template-columns: 1fr;
+    }
+
+    .available-player-control--wide {
+        grid-column: auto;
     }
 
     .available-player-card {
