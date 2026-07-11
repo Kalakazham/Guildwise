@@ -3,6 +3,7 @@
 
 @using Guildwise.Application.Contracts.RosterOverview
 @using Guildwise.Application.RosterOverview.GetRosterOverview
+@using Guildwise.Domain
 @inject GetRosterOverviewHandler GetRosterOverviewHandler
 
 <PageTitle>Roster Overview</PageTitle>
@@ -48,6 +49,9 @@
     }
     else
     {
+        var visibleMembers = GetVisibleMembers();
+        var totalMembers = overview.Members.Count;
+
         <section class="summary-grid" aria-label="Roster summary">
             <SummaryCard Label="Guilds" Value="@overview.Summary.GuildCount.ToString()" Detail="Configured guild contexts" />
             <SummaryCard Label="Players" Value="@overview.Summary.PlayerCount.ToString()" Detail="@($"{overview.Summary.PlayersWithMainCharacterCount} with main characters")" />
@@ -94,84 +98,182 @@
                 }
                 else
                 {
-                    <div class="roster-table-wrap">
-                        <table class="roster-table">
-                            <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Main character</th>
-                                <th>Class</th>
-                                <th>Role</th>
-                                <th>Main/Alt</th>
-                                <th>Guild rank</th>
-                                <th>Raid teams</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @foreach (var member in overview.Members)
+                    <div class="roster-controls" aria-label="Roster search filter and sort controls">
+                        <div class="roster-controls__summary">
+                            <span>Showing @visibleMembers.Count of @totalMembers players</span>
+                            @if (HasActiveRosterControls)
                             {
+                                <button type="button" class="roster-link-action" @onclick="ResetRosterControls">Reset controls</button>
+                            }
+                        </div>
+
+                        <div class="roster-controls__grid">
+                            <label class="roster-control roster-control--wide">
+                                Search
+                                <input
+                                    @bind="searchText"
+                                    @bind:event="oninput"
+                                    placeholder="Player, character, realm, raid team" />
+                            </label>
+
+                            <label class="roster-control">
+                                Class
+                                <select @bind="selectedClass">
+                                    <option value="@AllFilterValue">All classes</option>
+                                    @foreach (var characterClass in AvailableClasses)
+                                    {
+                                        <option value="@characterClass.ToString()">@RosterDisplayText.CharacterClass(characterClass)</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="roster-control">
+                                Role
+                                <select @bind="selectedRole">
+                                    <option value="@AllFilterValue">All roles</option>
+                                    @foreach (var role in StableRoles)
+                                    {
+                                        <option value="@role.ToString()">@RosterDisplayText.CharacterRole(role)</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="roster-control">
+                                Guild
+                                <select @bind="selectedGuildMembership">
+                                    <option value="@AllFilterValue">All players</option>
+                                    <option value="@GuildMembersFilterValue">Guild members</option>
+                                    <option value="@NotInGuildFilterValue">Not in guild</option>
+                                </select>
+                            </label>
+
+                            <label class="roster-control">
+                                Main
+                                <select @bind="selectedMainCharacter">
+                                    <option value="@AllFilterValue">All main states</option>
+                                    <option value="@HasMainFilterValue">Has main</option>
+                                    <option value="@MissingMainFilterValue">Missing main</option>
+                                </select>
+                            </label>
+
+                            <label class="roster-control">
+                                Raid team
+                                <select @bind="selectedRaidTeam">
+                                    <option value="@AllFilterValue">All raid teams</option>
+                                    <option value="@NoRaidTeamFilterValue">No raid team</option>
+                                    @foreach (var raidTeam in AvailableRaidTeams)
+                                    {
+                                        <option value="@raidTeam">@raidTeam</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="roster-control">
+                                Sort
+                                <select @bind="selectedSort">
+                                    <option value="@SortPlayerName">Player name</option>
+                                    <option value="@SortMainCharacterName">Main character</option>
+                                    <option value="@SortClass">Class</option>
+                                    <option value="@SortRole">Role</option>
+                                    <option value="@SortGuildRank">Guild rank</option>
+                                    <option value="@SortRaidTeamCount">Raid team count</option>
+                                    <option value="@SortRaidTeamName">Raid team name</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    @if (visibleMembers.Count == 0)
+                    {
+                        <EmptyState
+                            Title="No roster matches."
+                            Message="No players match the current search and filters. Reset the controls or broaden the search to show roster members again.">
+                            <Actions>
+                                <button type="button" class="roster-action" @onclick="ResetRosterControls">Reset controls</button>
+                            </Actions>
+                        </EmptyState>
+                    }
+                    else
+                    {
+                        <div class="roster-table-wrap">
+                            <table class="roster-table">
+                                <thead>
                                 <tr>
-                                    <td>
-                                        <div class="player-cell">
-                                            <span>@member.PlayerDisplayName</span>
-                                            @if (!member.IsGuildMember)
-                                            {
-                                                <small>Not in guild</small>
-                                            }
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @if (member.HasMainCharacter)
-                                        {
-                                            <div class="character-cell">
-                                                <span>@member.MainCharacterName</span>
-                                                <small>@member.CharacterRegion - @member.CharacterRealm</small>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <span class="muted">No main character</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <div class="badge-stack">
-                                            <CharacterClassBadge Value="member.CharacterClass" />
-                                            <SpecializationDisplay Value="member.Specialization" />
-                                        </div>
-                                    </td>
-                                    <td><CharacterRoleBadge Value="member.Role" /></td>
-                                    <td>
-                                        <MainAltBadge HasMainCharacter="member.HasMainCharacter" />
-                                    </td>
-                                    <td>
-                                        <div class="badge-cluster">
-                                            <GuildRankBadge Value="member.GuildRank" />
-                                            @foreach (var role in member.AdditionalRoles)
-                                            {
-                                                <GuildRoleBadge Value="role" />
-                                            }
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @if (member.RaidTeamNames.Count == 0)
-                                        {
-                                            <span class="muted">Unassigned</span>
-                                        }
-                                        else
-                                        {
-                                            <div class="team-list">
-                                                @foreach (var team in member.RaidTeamNames)
+                                    <th>Player</th>
+                                    <th>Main character</th>
+                                    <th>Class</th>
+                                    <th>Role</th>
+                                    <th>Main/Alt</th>
+                                    <th>Guild rank</th>
+                                    <th>Raid teams</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var member in visibleMembers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="player-cell">
+                                                <span>@member.PlayerDisplayName</span>
+                                                @if (!member.IsGuildMember)
                                                 {
-                                                    <RaidTeamBadge Name="@team" />
+                                                    <small>Not in guild</small>
                                                 }
                                             </div>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
+                                        </td>
+                                        <td>
+                                            @if (member.HasMainCharacter)
+                                            {
+                                                <div class="character-cell">
+                                                    <span>@member.MainCharacterName</span>
+                                                    <small>@member.CharacterRegion - @member.CharacterRealm</small>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="muted">No main character</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="badge-stack">
+                                                <CharacterClassBadge Value="member.CharacterClass" />
+                                                <SpecializationDisplay Value="member.Specialization" />
+                                            </div>
+                                        </td>
+                                        <td><CharacterRoleBadge Value="member.Role" /></td>
+                                        <td>
+                                            <MainAltBadge HasMainCharacter="member.HasMainCharacter" />
+                                        </td>
+                                        <td>
+                                            <div class="badge-cluster">
+                                                <GuildRankBadge Value="member.GuildRank" />
+                                                @foreach (var role in member.AdditionalRoles)
+                                                {
+                                                    <GuildRoleBadge Value="role" />
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (member.RaidTeamNames.Count == 0)
+                                            {
+                                                <span class="muted">Unassigned</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="team-list">
+                                                    @foreach (var team in member.RaidTeamNames)
+                                                    {
+                                                        <RaidTeamBadge Name="@team" />
+                                                    }
+                                                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 }
             </ContentPanel>
         </section>
@@ -179,9 +281,63 @@
 </main>
 
 @code {
+    private const string AllFilterValue = "all";
+    private const string GuildMembersFilterValue = "guild-members";
+    private const string NotInGuildFilterValue = "not-in-guild";
+    private const string HasMainFilterValue = "has-main";
+    private const string MissingMainFilterValue = "missing-main";
+    private const string NoRaidTeamFilterValue = "no-raid-team";
+    private const string SortPlayerName = "player-name";
+    private const string SortMainCharacterName = "main-character-name";
+    private const string SortClass = "class";
+    private const string SortRole = "role";
+    private const string SortGuildRank = "guild-rank";
+    private const string SortRaidTeamCount = "raid-team-count";
+    private const string SortRaidTeamName = "raid-team-name";
+
+    private static readonly IReadOnlyList<CharacterRole> StableRoles =
+    [
+        CharacterRole.Tank,
+        CharacterRole.Healer,
+        CharacterRole.Damage
+    ];
+
     private RosterOverviewDto? overview;
     private bool isLoading = true;
     private string? loadFailure;
+    private string searchText = string.Empty;
+    private string selectedClass = AllFilterValue;
+    private string selectedRole = AllFilterValue;
+    private string selectedGuildMembership = AllFilterValue;
+    private string selectedMainCharacter = AllFilterValue;
+    private string selectedRaidTeam = AllFilterValue;
+    private string selectedSort = SortPlayerName;
+
+    private bool HasActiveRosterControls
+        => !string.IsNullOrWhiteSpace(searchText)
+            || selectedClass != AllFilterValue
+            || selectedRole != AllFilterValue
+            || selectedGuildMembership != AllFilterValue
+            || selectedMainCharacter != AllFilterValue
+            || selectedRaidTeam != AllFilterValue
+            || selectedSort != SortPlayerName;
+
+    private IReadOnlyList<CharacterClass> AvailableClasses
+        => overview?.Members
+            .Where(member => member.CharacterClass.HasValue)
+            .Select(member => member.CharacterClass!.Value)
+            .Distinct()
+            .OrderBy(RosterDisplayText.CharacterClass, StringComparer.OrdinalIgnoreCase)
+            .ToList()
+        ?? [];
+
+    private IReadOnlyList<string> AvailableRaidTeams
+        => overview?.Members
+            .SelectMany(member => member.RaidTeamNames)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList()
+        ?? [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,4 +369,130 @@
             && roster.Summary.PlayerCount == 0
             && roster.Summary.CharacterCount == 0
             && roster.Summary.RaidTeamCount == 0;
+
+    private IReadOnlyList<RosterMemberDto> GetVisibleMembers()
+    {
+        if (overview is null)
+        {
+            return [];
+        }
+
+        var members = overview.Members
+            .Where(MatchesSearch)
+            .Where(MatchesClass)
+            .Where(MatchesRole)
+            .Where(MatchesGuildMembership)
+            .Where(MatchesMainCharacter)
+            .Where(MatchesRaidTeam);
+
+        return ApplySort(members).ToList();
+    }
+
+    private bool MatchesSearch(RosterMemberDto member)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return true;
+        }
+
+        var search = searchText.Trim();
+        return ContainsSearch(member.PlayerDisplayName, search)
+            || ContainsSearch(member.MainCharacterName, search)
+            || ContainsSearch(member.CharacterRealm, search)
+            || member.RaidTeamNames.Any(team => ContainsSearch(team, search));
+    }
+
+    private bool MatchesClass(RosterMemberDto member)
+        => selectedClass == AllFilterValue
+            || member.CharacterClass?.ToString() == selectedClass;
+
+    private bool MatchesRole(RosterMemberDto member)
+        => selectedRole == AllFilterValue
+            || member.Role?.ToString() == selectedRole;
+
+    private bool MatchesGuildMembership(RosterMemberDto member)
+        => selectedGuildMembership switch
+        {
+            GuildMembersFilterValue => member.IsGuildMember,
+            NotInGuildFilterValue => !member.IsGuildMember,
+            _ => true
+        };
+
+    private bool MatchesMainCharacter(RosterMemberDto member)
+        => selectedMainCharacter switch
+        {
+            HasMainFilterValue => member.HasMainCharacter,
+            MissingMainFilterValue => !member.HasMainCharacter,
+            _ => true
+        };
+
+    private bool MatchesRaidTeam(RosterMemberDto member)
+        => selectedRaidTeam switch
+        {
+            NoRaidTeamFilterValue => member.RaidTeamNames.Count == 0,
+            AllFilterValue => true,
+            _ => member.RaidTeamNames.Contains(selectedRaidTeam, StringComparer.OrdinalIgnoreCase)
+        };
+
+    private IOrderedEnumerable<RosterMemberDto> ApplySort(IEnumerable<RosterMemberDto> members)
+        => selectedSort switch
+        {
+            SortMainCharacterName => members
+                .OrderBy(member => member.MainCharacterName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId),
+            SortClass => members
+                .OrderBy(member => FormatClassForSort(member), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId),
+            SortRole => members
+                .OrderBy(member => FormatRoleForSort(member), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId),
+            SortGuildRank => members
+                .OrderBy(member => FormatGuildRankForSort(member), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId),
+            SortRaidTeamCount => members
+                .OrderBy(member => member.RaidTeamNames.Count)
+                .ThenBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId),
+            SortRaidTeamName => members
+                .OrderBy(member => member.RaidTeamNames.FirstOrDefault() ?? "zzzzzz", StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId),
+            _ => members
+                .OrderBy(member => member.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.PlayerId)
+        };
+
+    private void ResetRosterControls()
+    {
+        searchText = string.Empty;
+        selectedClass = AllFilterValue;
+        selectedRole = AllFilterValue;
+        selectedGuildMembership = AllFilterValue;
+        selectedMainCharacter = AllFilterValue;
+        selectedRaidTeam = AllFilterValue;
+        selectedSort = SortPlayerName;
+    }
+
+    private static bool ContainsSearch(string? value, string search)
+        => !string.IsNullOrWhiteSpace(value)
+            && value.Contains(search, StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatClassForSort(RosterMemberDto member)
+        => member.CharacterClass.HasValue
+            ? RosterDisplayText.CharacterClass(member.CharacterClass.Value)
+            : "zzzzzz";
+
+    private static string FormatRoleForSort(RosterMemberDto member)
+        => member.Role.HasValue
+            ? RosterDisplayText.CharacterRole(member.Role.Value)
+            : "zzzzzz";
+
+    private static string FormatGuildRankForSort(RosterMemberDto member)
+        => member.GuildRank.HasValue
+            ? RosterDisplayText.GuildRank(member.GuildRank.Value)
+            : "zzzzzz";
 }

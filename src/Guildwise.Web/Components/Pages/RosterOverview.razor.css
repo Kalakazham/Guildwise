@@ -99,6 +99,88 @@
     margin: 0.25rem 0 0;
 }
 
+.roster-controls {
+    background: rgb(2 6 23 / 0.42);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.roster-controls__summary {
+    align-items: center;
+    color: #a8b3c7;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    font-weight: 800;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.roster-controls__grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+}
+
+.roster-control {
+    color: #cbd5e1;
+    display: grid;
+    font-size: 0.76rem;
+    font-weight: 900;
+    gap: 0.4rem;
+    text-transform: uppercase;
+}
+
+.roster-control--wide {
+    grid-column: span 2;
+}
+
+.roster-control input,
+.roster-control select {
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 6px;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 0.9rem;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+}
+
+.roster-control input:focus,
+.roster-control select:focus,
+.roster-link-action:focus,
+.roster-action:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.roster-control input::placeholder {
+    color: #64748b;
+}
+
+.roster-link-action {
+    background: transparent;
+    border: 0;
+    color: #f7d98b;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 900;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.18rem;
+}
+
+.roster-link-action:hover {
+    color: #fde68a;
+}
+
 .roster-table-wrap {
     overflow-x: auto;
 }
@@ -179,5 +261,9 @@
 
     .summary-grid {
         grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    }
+
+    .roster-control--wide {
+        grid-column: span 1;
     }
 }
