@@ -293,6 +293,7 @@ public sealed class ApplicationUseCaseTests
         Assert.Equal("EU", guildOverview.Region);
         Assert.Equal("Draenor", guildOverview.Realm);
         Assert.Equal(0, guildOverview.RaidTeamCount);
+        Assert.Empty(guildOverview.AvailablePlayers);
         Assert.Empty(guildOverview.Teams);
     }
 
@@ -339,6 +340,13 @@ public sealed class ApplicationUseCaseTests
         Assert.Equal(CharacterRole.Tank, member.Role);
         Assert.True(member.HasMainCharacter);
         Assert.Equal(GuildRank.Member, member.GuildRank);
+
+        var availablePlayer = Assert.Single(guildOverview.AvailablePlayers);
+        Assert.Equal(player.Id, availablePlayer.PlayerId);
+        Assert.Equal("Myrmi", availablePlayer.PlayerDisplayName);
+        Assert.True(availablePlayer.HasMainCharacter);
+        Assert.Equal(raidTeam.Id, Assert.Single(availablePlayer.RaidTeamIds));
+        Assert.Equal("Team One", Assert.Single(availablePlayer.RaidTeamNames));
     }
 
     [Fact]
@@ -356,6 +364,14 @@ public sealed class ApplicationUseCaseTests
         var guildOverview = Assert.Single(overview.Guilds);
         Assert.Equal(1, guildOverview.RaidMemberCount);
         Assert.Equal(1, guildOverview.UnassignedGuildMemberCount);
+        Assert.Equal(2, guildOverview.AvailablePlayers.Count);
+
+        var assigned = guildOverview.AvailablePlayers.Single(player => player.PlayerDisplayName == "Assigned");
+        Assert.Equal("Team One", Assert.Single(assigned.RaidTeamNames));
+
+        var bench = guildOverview.AvailablePlayers.Single(player => player.PlayerDisplayName == "Bench");
+        Assert.Empty(bench.RaidTeamIds);
+        Assert.Empty(bench.RaidTeamNames);
     }
 
     [Fact]
@@ -374,6 +390,12 @@ public sealed class ApplicationUseCaseTests
 
         var guildOverview = Assert.Single(overview.Guilds);
         Assert.Equal(1, guildOverview.PlayersWithoutMainCharacterCount);
+
+        var availablePlayer = Assert.Single(guildOverview.AvailablePlayers);
+        Assert.Equal(memberSetup.PlayerId, availablePlayer.PlayerId);
+        Assert.False(availablePlayer.HasMainCharacter);
+        Assert.Null(availablePlayer.MainCharacterId);
+        Assert.Equal("Team One", Assert.Single(availablePlayer.RaidTeamNames));
 
         var team = Assert.Single(guildOverview.Teams);
         Assert.Equal(0, team.Composition.TankCount);

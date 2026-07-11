@@ -56,6 +56,12 @@ public sealed class GetRaidTeamManagementOverviewHandler
             .Select(team => ToTeamDto(guild, team, players))
             .ToList();
 
+        var availablePlayers = guild.Members
+            .Select(member => ToAvailablePlayerDto(guild, member.PlayerId, players))
+            .OrderBy(player => player.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(player => player.PlayerId)
+            .ToList();
+
         var playersWithoutMainCharacterCount = guild.Members
             .Count(member => !players.TryGetValue(member.PlayerId, out var player) || !player.MainCharacterId.HasValue);
 
@@ -69,6 +75,7 @@ public sealed class GetRaidTeamManagementOverviewHandler
             raidMemberIds.Count,
             guild.Members.Count(member => !raidMemberIds.Contains(member.PlayerId)),
             playersWithoutMainCharacterCount,
+            availablePlayers,
             teams);
     }
 
@@ -122,5 +129,40 @@ public sealed class GetRaidTeamManagementOverviewHandler
             mainCharacter is not null,
             guildMember?.Rank,
             guildMember?.AdditionalRoles.ToList() ?? []);
+    }
+
+    private static AvailableRaidTeamPlayerDto ToAvailablePlayerDto(
+        Guild guild,
+        Guid playerId,
+        Dictionary<Guid, Player> players)
+    {
+        players.TryGetValue(playerId, out var player);
+
+        var guildMember = guild.Members.FirstOrDefault(member => member.PlayerId == playerId);
+        var mainCharacter = player?.MainCharacterId.HasValue == true
+            ? player.Characters.FirstOrDefault(character => character.Id == player.MainCharacterId.Value)
+            : null;
+
+        var raidTeams = guild.RaidTeams
+            .Where(team => team.Members.Any(member => member.PlayerId == playerId))
+            .OrderBy(team => team.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(team => team.Id)
+            .ToList();
+
+        return new AvailableRaidTeamPlayerDto(
+            playerId,
+            player?.DisplayName ?? playerId.ToString("N"),
+            mainCharacter?.Id,
+            mainCharacter?.Name,
+            mainCharacter?.Region,
+            mainCharacter?.Realm,
+            mainCharacter?.CharacterClass,
+            mainCharacter?.Specialization,
+            mainCharacter?.Role,
+            mainCharacter is not null,
+            guildMember?.Rank,
+            guildMember?.AdditionalRoles.ToList() ?? [],
+            raidTeams.Select(team => team.Id).ToList(),
+            raidTeams.Select(team => team.Name).ToList());
     }
 }

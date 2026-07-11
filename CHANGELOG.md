@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 ### Added
 
 - ADR for the Guildwise frontend UI stack and Web styling boundaries.
+- Raid team member assignment UX for adding and removing players from raid teams.
 - Raid team management overview and in-page detail layout.
 - Roster overview UI shell with reusable Web layout components and a focused Application query.
 - WoW-inspired roster badges and visual identity for class, role, guild and raid team metadata.

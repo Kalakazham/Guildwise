@@ -10,4 +10,5 @@ public sealed record RaidTeamManagementGuildDto(
     int RaidMemberCount,
     int UnassignedGuildMemberCount,
     int PlayersWithoutMainCharacterCount,
+    IReadOnlyList<AvailableRaidTeamPlayerDto> AvailablePlayers,
     IReadOnlyList<RaidTeamManagementTeamDto> Teams);
