@@ -1,0 +1,29 @@
+<section class="content-panel @Class">
+    @if (!string.IsNullOrWhiteSpace(Title) || HeaderContent is not null)
+    {
+        <div class="content-panel__header">
+            @if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <h2>@Title</h2>
+            }
+            @HeaderContent
+        </div>
+    }
+    <div class="content-panel__body">
+        @ChildContent
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public string? Class { get; set; }
+}

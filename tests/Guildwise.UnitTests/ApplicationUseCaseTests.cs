@@ -33,6 +33,7 @@ using Guildwise.Application.RaidTeams.GetRaidTeam;
 using Guildwise.Application.RaidTeams.ListRaidTeamsForGuild;
 using Guildwise.Application.RaidTeams.RemovePlayerFromRaidTeam;
 using Guildwise.Application.RaidTeams.UpdateRaidTeam;
+using Guildwise.Application.RosterOverview.GetRosterOverview;
 using Guildwise.Domain;
 
 namespace Guildwise.UnitTests;
@@ -204,6 +205,67 @@ public sealed class ApplicationUseCaseTests
         Assert.Single(roster.Members);
         Assert.Equal(player.Id, roster.Members.Single().PlayerId);
         Assert.Single(await context.ListRaidTeamsForGuildHandler.HandleAsync(new ListRaidTeamsForGuildQuery(guild.Id)));
+    }
+
+    [Fact]
+    public async Task GetRosterOverview_When_No_Data_Exists_Returns_Empty_Collections()
+    {
+        var context = new TestContext();
+
+        var overview = await context.GetRosterOverviewHandler.HandleAsync(new GetRosterOverviewQuery());
+
+        Assert.Equal(0, overview.Summary.GuildCount);
+        Assert.Equal(0, overview.Summary.PlayerCount);
+        Assert.Empty(overview.Guilds);
+        Assert.Empty(overview.Members);
+    }
+
+    [Fact]
+    public async Task GetRosterOverview_Returns_Summary_And_Roster_Members()
+    {
+        var context = new TestContext();
+        var guild = AssertSuccess(await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor")));
+        var player = AssertSuccess(await context.CreatePlayerHandler.HandleAsync(new CreatePlayerCommand("Myrmi")));
+        var character = AssertSuccess(await context.CreateCharacterHandler.HandleAsync(new CreateCharacterCommand(
+            player.Id,
+            "Alysa",
+            "EU",
+            "Draenor",
+            CharacterClass.Paladin,
+            CharacterSpecialization.PaladinRetribution,
+            CharacterRole.Damage)));
+
+        AssertSuccess(await context.SetMainCharacterHandler.HandleAsync(new SetMainCharacterCommand(player.Id, character.Id)));
+        AssertSuccess(await context.AddPlayerToGuildHandler.HandleAsync(new AddPlayerToGuildCommand(guild.Id, player.Id, GuildRank.Member)));
+        var raidTeam = AssertSuccess(await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One")));
+        AssertSuccess(await context.AddPlayerToRaidTeamHandler.HandleAsync(new AddPlayerToRaidTeamCommand(guild.Id, raidTeam.Id, player.Id)));
+
+        var overview = await context.GetRosterOverviewHandler.HandleAsync(new GetRosterOverviewQuery());
+
+        Assert.Equal(1, overview.Summary.GuildCount);
+        Assert.Equal(1, overview.Summary.PlayerCount);
+        Assert.Equal(1, overview.Summary.CharacterCount);
+        Assert.Equal(1, overview.Summary.RaidTeamCount);
+        Assert.Equal(1, overview.Summary.GuildMemberCount);
+        Assert.Equal(1, overview.Summary.RaidRosterMemberCount);
+        Assert.Equal(1, overview.Summary.PlayersWithMainCharacterCount);
+
+        var guildSummary = Assert.Single(overview.Guilds);
+        Assert.Equal("Guildwise", guildSummary.Name);
+        Assert.Equal(1, guildSummary.RaidTeamCount);
+        Assert.Equal(1, guildSummary.MemberCount);
+
+        var member = Assert.Single(overview.Members);
+        Assert.Equal(player.Id, member.PlayerId);
+        Assert.Equal("Myrmi", member.PlayerDisplayName);
+        Assert.Equal(character.Id, member.MainCharacterId);
+        Assert.Equal("Alysa", member.MainCharacterName);
+        Assert.Equal(CharacterClass.Paladin, member.CharacterClass);
+        Assert.Equal(CharacterRole.Damage, member.Role);
+        Assert.True(member.HasMainCharacter);
+        Assert.True(member.IsGuildMember);
+        Assert.Equal(GuildRank.Member, member.GuildRank);
+        Assert.Equal("Team One", Assert.Single(member.RaidTeamNames));
     }
 
     [Fact]
@@ -1065,6 +1127,8 @@ public sealed class ApplicationUseCaseTests
             AddPlayerToGuildHandler = new AddPlayerToGuildHandler(GuildRepository, PlayerRepository);
             AddAdditionalRoleHandler = new AddAdditionalRoleToGuildMemberHandler(GuildRepository);
             RemoveAdditionalRoleHandler = new RemoveAdditionalRoleFromGuildMemberHandler(GuildRepository);
+
+            GetRosterOverviewHandler = new GetRosterOverviewHandler(GuildRepository, PlayerRepository);
         }
 
         public InMemoryGuildRepository GuildRepository { get; } = new();
@@ -1104,6 +1168,7 @@ public sealed class ApplicationUseCaseTests
         public AddPlayerToGuildHandler AddPlayerToGuildHandler { get; }
         public AddAdditionalRoleToGuildMemberHandler AddAdditionalRoleHandler { get; }
         public RemoveAdditionalRoleFromGuildMemberHandler RemoveAdditionalRoleHandler { get; }
+        public GetRosterOverviewHandler GetRosterOverviewHandler { get; }
     }
 
     private sealed class InMemoryGuildRepository : IGuildRepository

@@ -1,0 +1,25 @@
+@using Guildwise.Domain
+
+@if (!Value.HasValue)
+{
+    <span class="rank-badge rank-badge--none">No guild rank</span>
+}
+else
+{
+    var label = RosterDisplayText.GuildRank(Value.Value);
+    <span class="rank-badge rank-badge--@GetToken(Value.Value)" title="@($"{label} guild rank")">@label</span>
+}
+
+@code {
+    [Parameter]
+    public GuildRank? Value { get; set; }
+
+    private static string GetToken(GuildRank rank)
+        => rank switch
+        {
+            GuildRank.GuildLead => "lead",
+            GuildRank.Officer => "officer",
+            GuildRank.Member => "member",
+            _ => "none"
+        };
+}

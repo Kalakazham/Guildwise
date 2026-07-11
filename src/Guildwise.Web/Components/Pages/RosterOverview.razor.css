@@ -1,0 +1,269 @@
+.roster-overview-page {
+    background:
+        radial-gradient(circle at 14% 0%, rgb(215 180 106 / 0.2), transparent 30%),
+        radial-gradient(circle at 82% 18%, rgb(63 199 235 / 0.08), transparent 26%),
+        linear-gradient(180deg, #111827 0%, #07111f 44%, #050914 100%);
+    color: #e5e7eb;
+    display: grid;
+    gap: 1.25rem;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.roster-action {
+    align-items: center;
+    background: #d7b46a;
+    border: 1px solid #f0d58a;
+    border-radius: 6px;
+    color: #111827;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+}
+
+.roster-action:hover {
+    background: #f0d58a;
+}
+
+.roster-action--secondary {
+    background: rgb(15 23 42 / 0.84);
+    border-color: rgb(148 163 184 / 0.32);
+    color: #e5e7eb;
+}
+
+.roster-action--secondary:hover {
+    background: rgb(30 41 59 / 0.96);
+}
+
+.summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+}
+
+.overview-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(18rem, 0.7fr) minmax(0, 1.7fr);
+}
+
+.guild-context-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.guild-context-card {
+    background: rgb(2 6 23 / 0.5);
+    border: 1px solid rgb(215 180 106 / 0.16);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.guild-context-card h3 {
+    color: #f8fafc;
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.guild-context-card p {
+    color: #a8b3c7;
+    margin: 0.35rem 0 0;
+}
+
+.guild-context-card dl {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+}
+
+.guild-context-card dt {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.guild-context-card dd {
+    color: #f8fafc;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0.25rem 0 0;
+}
+
+.roster-controls {
+    background: rgb(2 6 23 / 0.42);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.roster-controls__summary {
+    align-items: center;
+    color: #a8b3c7;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    font-weight: 800;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.roster-controls__grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+}
+
+.roster-control {
+    color: #cbd5e1;
+    display: grid;
+    font-size: 0.76rem;
+    font-weight: 900;
+    gap: 0.4rem;
+    text-transform: uppercase;
+}
+
+.roster-control--wide {
+    grid-column: span 2;
+}
+
+.roster-control input,
+.roster-control select {
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 6px;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 0.9rem;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+}
+
+.roster-control input:focus,
+.roster-control select:focus,
+.roster-link-action:focus,
+.roster-action:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.roster-control input::placeholder {
+    color: #64748b;
+}
+
+.roster-link-action {
+    background: transparent;
+    border: 0;
+    color: #f7d98b;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 900;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.18rem;
+}
+
+.roster-link-action:hover {
+    color: #fde68a;
+}
+
+.roster-table-wrap {
+    overflow-x: auto;
+}
+
+.roster-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 58rem;
+    width: 100%;
+}
+
+.roster-table th,
+.roster-table td {
+    border-bottom: 1px solid rgb(148 163 184 / 0.14);
+    padding: 0.95rem 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.roster-table th {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.roster-table tbody tr:hover {
+    background: rgb(30 41 59 / 0.42);
+}
+
+.player-cell,
+.character-cell {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.player-cell span,
+.character-cell span {
+    color: #f8fafc;
+    font-weight: 800;
+}
+
+.player-cell small,
+.character-cell small {
+    color: #8390a3;
+    display: block;
+    font-size: 0.78rem;
+}
+
+.badge-stack {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+}
+
+.badge-cluster,
+.team-list {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+}
+
+.muted {
+    color: #8390a3;
+}
+
+@media (max-width: 960px) {
+    .overview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .roster-overview-page {
+        padding: 1rem;
+    }
+
+    .summary-grid {
+        grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    }
+
+    .roster-control--wide {
+        grid-column: span 1;
+    }
+}

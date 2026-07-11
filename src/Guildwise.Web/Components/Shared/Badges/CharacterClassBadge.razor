@@ -1,0 +1,19 @@
+@using Guildwise.Domain
+
+@if (!Value.HasValue || Value.Value == CharacterClass.Unknown)
+{
+    <span class="class-badge class-badge--empty">No class</span>
+}
+else
+{
+    var label = RosterDisplayText.CharacterClass(Value.Value);
+    <span class="class-badge" style="--class-color: @RosterDisplayText.CharacterClassColor(Value.Value)" title="@($"{label} class")">
+        <span class="class-badge__mark" aria-hidden="true"></span>
+        <span>@label</span>
+    </span>
+}
+
+@code {
+    [Parameter]
+    public CharacterClass? Value { get; set; }
+}

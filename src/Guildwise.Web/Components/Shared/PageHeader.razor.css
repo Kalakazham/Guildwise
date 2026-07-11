@@ -1,0 +1,49 @@
+.page-header {
+    align-items: flex-end;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.page-header h1 {
+    color: #f8fafc;
+    font-size: clamp(2rem, 5vw, 3.75rem);
+    line-height: 1;
+    margin: 0;
+}
+
+.page-header__eyebrow {
+    color: #d7b46a;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    margin: 0 0 0.45rem;
+    text-transform: uppercase;
+}
+
+.page-header__subtitle {
+    color: #a8b3c7;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 1rem 0 0;
+    max-width: 48rem;
+}
+
+.page-header__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-header__actions {
+        justify-content: flex-start;
+    }
+}

@@ -1,0 +1,18 @@
+<div class="loading-state">
+    <div class="loading-state__bar"></div>
+    <div>
+        <p class="loading-state__title">@Title</p>
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <p class="loading-state__message">@Message</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Loading";
+
+    [Parameter]
+    public string? Message { get; set; }
+}
