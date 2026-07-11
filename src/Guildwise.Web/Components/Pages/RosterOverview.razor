@@ -3,7 +3,6 @@
 
 @using Guildwise.Application.Contracts.RosterOverview
 @using Guildwise.Application.RosterOverview.GetRosterOverview
-@using Guildwise.Domain
 @inject GetRosterOverviewHandler GetRosterOverviewHandler
 
 <PageTitle>Roster Overview</PageTitle>
@@ -134,26 +133,24 @@
                                             <span class="muted">No main character</span>
                                         }
                                     </td>
-                                    <td>@RenderClass(member)</td>
-                                    <td>@RenderRole(member)</td>
                                     <td>
-                                        <span class="roster-pill roster-pill--main-state">
-                                            @(member.HasMainCharacter ? "Main set" : "Needs main")
-                                        </span>
+                                        <div class="badge-stack">
+                                            <CharacterClassBadge Value="member.CharacterClass" />
+                                            <SpecializationDisplay Value="member.Specialization" />
+                                        </div>
+                                    </td>
+                                    <td><CharacterRoleBadge Value="member.Role" /></td>
+                                    <td>
+                                        <MainAltBadge HasMainCharacter="member.HasMainCharacter" />
                                     </td>
                                     <td>
-                                        @if (member.GuildRank.HasValue)
-                                        {
-                                            <span>@member.GuildRank</span>
-                                            @if (member.AdditionalRoles.Count > 0)
+                                        <div class="badge-cluster">
+                                            <GuildRankBadge Value="member.GuildRank" />
+                                            @foreach (var role in member.AdditionalRoles)
                                             {
-                                                <small class="role-detail">@string.Join(", ", member.AdditionalRoles)</small>
+                                                <GuildRoleBadge Value="role" />
                                             }
-                                        }
-                                        else
-                                        {
-                                            <span class="muted">None</span>
-                                        }
+                                        </div>
                                     </td>
                                     <td>
                                         @if (member.RaidTeamNames.Count == 0)
@@ -165,7 +162,7 @@
                                             <div class="team-list">
                                                 @foreach (var team in member.RaidTeamNames)
                                                 {
-                                                    <span>@team</span>
+                                                    <RaidTeamBadge Name="@team" />
                                                 }
                                             </div>
                                         }
@@ -216,49 +213,4 @@
             && roster.Summary.PlayerCount == 0
             && roster.Summary.CharacterCount == 0
             && roster.Summary.RaidTeamCount == 0;
-
-    private static RenderFragment RenderClass(RosterMemberDto member)
-        => builder =>
-        {
-            if (!member.CharacterClass.HasValue)
-            {
-                builder.OpenElement(0, "span");
-                builder.AddAttribute(1, "class", "muted");
-                builder.AddContent(2, "-");
-                builder.CloseElement();
-                return;
-            }
-
-            builder.OpenElement(3, "span");
-            builder.AddAttribute(4, "class", "roster-pill roster-pill--class");
-            builder.AddContent(5, member.CharacterClass.Value.ToString());
-            builder.CloseElement();
-        };
-
-    private static RenderFragment RenderRole(RosterMemberDto member)
-        => builder =>
-        {
-            if (!member.Role.HasValue)
-            {
-                builder.OpenElement(0, "span");
-                builder.AddAttribute(1, "class", "muted");
-                builder.AddContent(2, "-");
-                builder.CloseElement();
-                return;
-            }
-
-            builder.OpenElement(3, "span");
-            builder.AddAttribute(4, "class", $"roster-pill roster-pill--role roster-pill--{GetRoleClass(member.Role.Value)}");
-            builder.AddContent(5, member.Role.Value.ToString());
-            builder.CloseElement();
-        };
-
-    private static string GetRoleClass(CharacterRole role)
-        => role switch
-        {
-            CharacterRole.Tank => "tank",
-            CharacterRole.Healer => "healer",
-            CharacterRole.Damage => "damage",
-            _ => "unknown"
-        };
 }

@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 ### Added
 
 - Roster overview UI shell with reusable Web layout components and a focused Application query.
+- WoW-inspired roster badges and visual identity for class, role, guild and raid team metadata.
 
 ### Changed
 

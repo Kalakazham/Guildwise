@@ -1,0 +1,9 @@
+<span class="main-alt-badge @(HasMainCharacter ? "main-alt-badge--ready" : "main-alt-badge--missing")"
+      title="@(HasMainCharacter ? "Player has a main character selected" : "Player still needs a main character")">
+    @(HasMainCharacter ? "Main set" : "Needs main")
+</span>
+
+@code {
+    [Parameter]
+    public bool HasMainCharacter { get; set; }
+}

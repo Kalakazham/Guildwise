@@ -1,0 +1,8 @@
+@using Guildwise.Domain
+
+<span class="guild-role-badge">@RosterDisplayText.AdditionalGuildRole(Value)</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public AdditionalGuildRole Value { get; set; }
+}
