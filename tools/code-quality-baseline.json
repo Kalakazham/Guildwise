@@ -7,7 +7,7 @@
     },
     {
       "path": "src/Guildwise.Web/Components/Pages/RaidEvents.razor",
-      "maxLines": 1729,
+      "maxLines": 470,
       "reason": "Raid event planning, lifecycle and signup UI grew before component extraction."
     },
     {

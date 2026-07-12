@@ -1,0 +1,34 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.RaidEvents
+
+<section class="event-summary-grid" aria-label="Raid event summary">
+    <SummaryCard Label="Events" Value="@RaidEvents.Count.ToString()" Detail="@EventsDetail" />
+    <SummaryCard Label="Guilds" Value="@GuildCount.ToString()" Detail="Available guild contexts" />
+    <SummaryCard Label="Raid teams with events" Value="@RaidTeamsWithEventsCount.ToString()" Detail="@RaidTeamsDetail" />
+    <SummaryCard Label="Next event" Value="@RaidEventUiText.FormatSummaryDate(NextEvent?.StartTime)" Detail="@RaidEventUiText.GetNextEventDetail(NextEvent)" />
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<RaidEventDto> RaidEvents { get; set; } = [];
+
+    [Parameter]
+    public int GuildCount { get; set; }
+
+    [Parameter]
+    public int RaidTeamsWithEventsCount { get; set; }
+
+    private RaidEventDto? NextEvent => RaidEvents
+        .OrderBy(raidEvent => raidEvent.StartTime)
+        .ThenBy(raidEvent => raidEvent.Title, StringComparer.OrdinalIgnoreCase)
+        .ThenBy(raidEvent => raidEvent.Id)
+        .FirstOrDefault();
+
+    private string EventsDetail => RaidEvents.Count == 0
+        ? "No planned raid events"
+        : "Planned raid dates";
+
+    private string RaidTeamsDetail => RaidTeamsWithEventsCount == 0
+        ? "No event assignments yet"
+        : "Teams assigned to events";
+}

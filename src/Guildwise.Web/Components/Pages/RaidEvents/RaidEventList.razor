@@ -1,0 +1,50 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.Guilds
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Application.Contracts.RaidTeams
+
+<div class="event-list" role="list" aria-label="Raid events">
+    @foreach (var raidEvent in Events)
+    {
+        var isSelected = SelectedRaidEventId == raidEvent.Id;
+        var guild = FindGuild(raidEvent);
+        var raidTeam = FindRaidTeam(guild, raidEvent);
+
+        <button
+            type="button"
+            class="@RaidEventUiText.GetEventListItemClass(raidEvent, isSelected)"
+            @onclick="() => OnSelect.InvokeAsync(raidEvent.Id)"
+            aria-pressed="@isSelected">
+            <span class="event-list-item__title">@raidEvent.Title</span>
+            <span class="event-list-item__time">@RaidEventUiText.FormatDateTime(raidEvent.StartTime)</span>
+            <span class="event-list-item__context">
+                <RaidTeamBadge Name="@RaidEventUiText.GetRaidTeamName(raidTeam)" />
+                <span>@RaidEventUiText.GetGuildContext(guild)</span>
+            </span>
+            <span class="event-list-item__meta">
+                <span class="event-difficulty">@RosterDisplayText.RaidDifficulty(raidEvent.Difficulty)</span>
+                <span class="@RaidEventUiText.GetEventStatusClass(raidEvent.Status)">@RaidEventUiText.FormatEventStatus(raidEvent.Status)</span>
+            </span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<RaidEventDto> Events { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<GuildDto> Guilds { get; set; } = [];
+
+    [Parameter]
+    public Guid? SelectedRaidEventId { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnSelect { get; set; }
+
+    private GuildDto? FindGuild(RaidEventDto raidEvent)
+        => Guilds.FirstOrDefault(guild => guild.Id == raidEvent.GuildId);
+
+    private static RaidTeamDto? FindRaidTeam(GuildDto? guild, RaidEventDto raidEvent)
+        => guild?.RaidTeams.FirstOrDefault(raidTeam => raidTeam.Id == raidEvent.RaidTeamId);
+}

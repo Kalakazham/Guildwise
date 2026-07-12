@@ -1,0 +1,107 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Domain
+
+@if (Event is not null)
+{
+    @if (Event.Status == RaidEventStatus.Cancelled)
+    {
+        <span class="event-edit-hint">This event is already cancelled.</span>
+    }
+    else if (isConfirming)
+    {
+        <div class="event-cancel-confirm">
+            <div>
+                <strong>Cancel this raid event?</strong>
+                <p>The event remains visible, but it will no longer be treated as a scheduled event.</p>
+            </div>
+            <div class="event-cancel-confirm__actions">
+                <button type="button" class="event-action event-action--danger" disabled="@inProgress" @onclick="ConfirmAsync">
+                    @(inProgress ? "Cancelling..." : "Confirm cancellation")
+                </button>
+                <button type="button" class="event-action event-action--secondary" disabled="@inProgress" @onclick="KeepScheduled">
+                    Keep scheduled
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button type="button" class="event-action event-action--danger" disabled="@inProgress" @onclick="RequestConfirmation">
+            Cancel event
+        </button>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="event-status-message event-status-message--@messageStatus" role="status">
+            @message
+        </div>
+    }
+}
+
+@code {
+    private Guid? loadedEventId;
+    private bool isConfirming;
+    private bool inProgress;
+    private string? message;
+    private string messageStatus = "success";
+
+    [Parameter]
+    public RaidEventDto? Event { get; set; }
+
+    [Parameter]
+    public Func<RaidEventDto, Task<RaidEventActionResult>>? OnCancel { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (loadedEventId == Event?.Id)
+        {
+            return;
+        }
+
+        loadedEventId = Event?.Id;
+        isConfirming = false;
+        inProgress = false;
+        message = null;
+    }
+
+    private void RequestConfirmation()
+    {
+        message = null;
+        isConfirming = true;
+    }
+
+    private void KeepScheduled()
+    {
+        isConfirming = false;
+        message = null;
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (Event is null || OnCancel is null || inProgress)
+        {
+            return;
+        }
+
+        inProgress = true;
+        message = null;
+
+        try
+        {
+            var result = await OnCancel(Event);
+            message = result.Message;
+            messageStatus = result.MessageStatus;
+
+            if (result.IsSuccess)
+            {
+                isConfirming = false;
+            }
+        }
+        finally
+        {
+            inProgress = false;
+        }
+    }
+}

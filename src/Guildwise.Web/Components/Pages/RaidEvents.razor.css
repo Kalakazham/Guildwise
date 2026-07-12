@@ -746,3 +746,557 @@
         justify-content: flex-start;
     }
 }
+
+.raid-events-page ::deep .event-action {
+    align-items: center;
+    background: #d7b46a;
+    border: 1px solid #f0d58a;
+    border-radius: 6px;
+    color: #111827;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+}
+
+.raid-events-page ::deep .event-action:hover {
+    background: #f0d58a;
+}
+
+.raid-events-page ::deep .event-action--secondary {
+    background: rgb(15 23 42 / 0.84);
+    border-color: rgb(148 163 184 / 0.32);
+    color: #e5e7eb;
+}
+
+.raid-events-page ::deep .event-action--secondary:hover {
+    background: rgb(30 41 59 / 0.96);
+}
+
+.raid-events-page ::deep .event-action--danger {
+    background: rgb(127 29 29 / 0.78);
+    border-color: rgb(248 113 113 / 0.44);
+    color: #fee2e2;
+}
+
+.raid-events-page ::deep .event-action--danger:hover {
+    background: rgb(153 27 27 / 0.88);
+}
+
+.raid-events-page ::deep .event-action:focus,
+.raid-events-page ::deep .event-list-item:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.raid-events-page ::deep .event-summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.raid-events-page ::deep .event-create-form,
+.raid-events-page ::deep .event-edit-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.raid-events-page ::deep .event-create-form__grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.raid-events-page ::deep .event-form-field {
+    color: #a8b3c7;
+    display: grid;
+    font-size: 0.78rem;
+    font-weight: 900;
+    gap: 0.4rem;
+    text-transform: uppercase;
+}
+
+.raid-events-page ::deep .event-form-field--wide {
+    grid-column: 1 / -1;
+}
+
+.raid-events-page ::deep .event-form-field input,
+.raid-events-page ::deep .event-form-field select,
+.raid-events-page ::deep .event-form-field textarea {
+    background: rgb(2 6 23 / 0.62);
+    border: 1px solid rgb(148 163 184 / 0.2);
+    border-radius: 7px;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.35;
+    min-height: 2.55rem;
+    padding: 0.65rem 0.75rem;
+    text-transform: none;
+}
+
+.raid-events-page ::deep .event-form-field textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+}
+
+.raid-events-page ::deep .event-form-field input:focus,
+.raid-events-page ::deep .event-form-field select:focus,
+.raid-events-page ::deep .event-form-field textarea:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.14);
+    outline: none;
+}
+
+.raid-events-page ::deep .event-form-field input:disabled,
+.raid-events-page ::deep .event-form-field select:disabled,
+.raid-events-page ::deep .event-form-field textarea:disabled,
+.raid-events-page ::deep .event-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.raid-events-page ::deep .event-create-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.raid-events-page ::deep .event-status-message {
+    border: 1px solid rgb(148 163 184 / 0.18);
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.45;
+    padding: 0.75rem 0.85rem;
+}
+
+.raid-events-page ::deep .event-status-message--success {
+    background: rgb(34 197 94 / 0.12);
+    border-color: rgb(34 197 94 / 0.28);
+    color: #bbf7d0;
+}
+
+.raid-events-page ::deep .event-status-message--error {
+    background: rgb(248 113 113 / 0.12);
+    border-color: rgb(248 113 113 / 0.32);
+    color: #fecaca;
+}
+
+.raid-events-page ::deep .event-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.raid-events-page ::deep .event-list-item {
+    background: rgb(2 6 23 / 0.52);
+    border: 1px solid rgb(148 163 184 / 0.16);
+    border-radius: 8px;
+    color: #e5e7eb;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: 0.6rem;
+    padding: 0.9rem;
+    text-align: left;
+    width: 100%;
+}
+
+.raid-events-page ::deep .event-list-item:hover,
+.raid-events-page ::deep .event-list-item--selected {
+    background: rgb(30 41 59 / 0.64);
+    border-color: rgb(215 180 106 / 0.42);
+}
+
+.raid-events-page ::deep .event-list-item--cancelled {
+    background: rgb(15 23 42 / 0.44);
+    border-color: rgb(148 163 184 / 0.12);
+}
+
+.raid-events-page ::deep .event-list-item--cancelled .event-list-item__title,
+.raid-events-page ::deep .event-list-item--cancelled .event-list-item__time,
+.raid-events-page ::deep .event-list-item--cancelled .event-list-item__context {
+    opacity: 0.78;
+}
+
+.raid-events-page ::deep .event-list-item__title {
+    color: #f8fafc;
+    font-weight: 900;
+}
+
+.raid-events-page ::deep .event-list-item__time {
+    color: #a8b3c7;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.raid-events-page ::deep .event-list-item__context,
+.raid-events-page ::deep .event-list-item__meta,
+.raid-events-page ::deep .event-detail-header__meta,
+.raid-events-page ::deep .event-signup-row__badges,
+.raid-events-page ::deep .event-signup-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.raid-events-page ::deep .event-list-item__context {
+    color: #8390a3;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.raid-events-page ::deep .event-difficulty,
+.raid-events-page ::deep .event-status-pill,
+.raid-events-page ::deep .event-signup-status {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 900;
+    justify-content: center;
+    line-height: 1;
+    min-height: 1.7rem;
+    padding: 0.4rem 0.6rem;
+    width: fit-content;
+}
+
+.raid-events-page ::deep .event-difficulty {
+    background: rgb(215 180 106 / 0.12);
+    border: 1px solid rgb(215 180 106 / 0.28);
+    color: #fde68a;
+}
+
+.raid-events-page ::deep .event-difficulty--large,
+.raid-events-page ::deep .event-status-pill--large {
+    font-size: 0.86rem;
+    min-height: 2rem;
+    padding-inline: 0.75rem;
+}
+
+.raid-events-page ::deep .event-status-pill {
+    border: 1px solid rgb(148 163 184 / 0.22);
+}
+
+.raid-events-page ::deep .event-status-pill--scheduled,
+.raid-events-page ::deep .event-signup-status--signed {
+    background: rgb(34 197 94 / 0.12);
+    border-color: rgb(34 197 94 / 0.28);
+    color: #bbf7d0;
+}
+
+.raid-events-page ::deep .event-status-pill--cancelled,
+.raid-events-page ::deep .event-signup-status--declined {
+    background: rgb(248 113 113 / 0.12);
+    border-color: rgb(248 113 113 / 0.3);
+    color: #fecaca;
+}
+
+.raid-events-page ::deep .event-status-pill--unknown,
+.raid-events-page ::deep .event-signup-status--missing,
+.raid-events-page ::deep .event-signup-status--unknown {
+    background: rgb(148 163 184 / 0.1);
+    color: #cbd5e1;
+}
+
+.raid-events-page ::deep .event-signup-status--tentative {
+    background: rgb(215 180 106 / 0.13);
+    border-color: rgb(215 180 106 / 0.3);
+    color: #fde68a;
+}
+
+.raid-events-page ::deep .event-detail-header {
+    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.raid-events-page ::deep .event-detail-header h2 {
+    color: #f8fafc;
+    font-size: 1.55rem;
+    margin: 0.65rem 0 0.35rem;
+}
+
+.raid-events-page ::deep .event-detail-header p,
+.raid-events-page ::deep .event-edit-hint,
+.raid-events-page ::deep .event-signup-panel__header p,
+.raid-events-page ::deep .event-signup-management__header p {
+    color: #a8b3c7;
+}
+
+.raid-events-page ::deep .event-detail-header__meta {
+    justify-content: flex-end;
+}
+
+.raid-events-page ::deep .event-detail-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.raid-events-page ::deep .event-detail-card,
+.raid-events-page ::deep .event-notes-panel,
+.raid-events-page ::deep .event-signup-summary-card,
+.raid-events-page ::deep .event-signup-row,
+.raid-events-page ::deep .event-signup-management-row {
+    background: rgb(2 6 23 / 0.38);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+}
+
+.raid-events-page ::deep .event-detail-card,
+.raid-events-page ::deep .event-notes-panel {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.95rem;
+}
+
+.raid-events-page ::deep .event-detail-card span,
+.raid-events-page ::deep .event-signup-summary-card span,
+.raid-events-page ::deep .event-signup-composition span {
+    color: #8390a3;
+    font-size: 0.74rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.raid-events-page ::deep .event-detail-card strong,
+.raid-events-page ::deep .event-notes-panel h3,
+.raid-events-page ::deep .event-signup-panel__header h3,
+.raid-events-page ::deep .event-signup-management__header h4,
+.raid-events-page ::deep .event-signup-row__identity strong {
+    color: #f8fafc;
+}
+
+.raid-events-page ::deep .event-detail-card small,
+.raid-events-page ::deep .event-signup-row__identity span,
+.raid-events-page ::deep .event-signup-muted {
+    color: #a8b3c7;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.raid-events-page ::deep .event-notes-panel {
+    margin-top: 1rem;
+}
+
+.raid-events-page ::deep .event-notes-panel p {
+    color: #cbd5e1;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.raid-events-page ::deep .event-cancel-confirm {
+    align-items: center;
+    background: rgb(127 29 29 / 0.14);
+    border: 1px solid rgb(248 113 113 / 0.26);
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    justify-content: space-between;
+    padding: 0.85rem;
+}
+
+.raid-events-page ::deep .event-cancel-confirm strong {
+    color: #fee2e2;
+    display: block;
+}
+
+.raid-events-page ::deep .event-cancel-confirm p {
+    color: #cbd5e1;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.raid-events-page ::deep .event-cancel-confirm__actions,
+.raid-events-page ::deep .event-signup-panel__header,
+.raid-events-page ::deep .event-signup-management__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: space-between;
+}
+
+.raid-events-page ::deep .event-signup-note {
+    background: rgb(248 113 113 / 0.1);
+    border: 1px solid rgb(248 113 113 / 0.24);
+    border-radius: 999px;
+    color: #fecaca;
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1.2;
+    padding: 0.45rem 0.65rem;
+}
+
+.raid-events-page ::deep .event-signup-summary-grid,
+.raid-events-page ::deep .event-signup-list,
+.raid-events-page ::deep .event-signup-management,
+.raid-events-page ::deep .event-signup-management-list {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.raid-events-page ::deep .event-signup-summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+}
+
+.raid-events-page ::deep .event-signup-summary-card {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.8rem;
+}
+
+.raid-events-page ::deep .event-signup-summary-card strong {
+    color: #f8fafc;
+    font-size: 1.25rem;
+}
+
+.raid-events-page ::deep .event-signup-summary-card--signed {
+    border-color: rgb(34 197 94 / 0.26);
+}
+
+.raid-events-page ::deep .event-signup-summary-card--tentative {
+    border-color: rgb(215 180 106 / 0.3);
+}
+
+.raid-events-page ::deep .event-signup-summary-card--declined {
+    border-color: rgb(248 113 113 / 0.26);
+}
+
+.raid-events-page ::deep .event-signup-composition {
+    align-items: center;
+    background: rgb(15 23 42 / 0.44);
+    border: 1px solid rgb(148 163 184 / 0.12);
+    border-radius: 8px;
+    color: #cbd5e1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    padding: 0.75rem 0.8rem;
+}
+
+.raid-events-page ::deep .event-signup-composition strong {
+    background: rgb(2 6 23 / 0.42);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 999px;
+    color: #e5e7eb;
+    font-size: 0.78rem;
+    font-weight: 900;
+    padding: 0.4rem 0.6rem;
+}
+
+.raid-events-page ::deep .event-signup-row {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(11rem, 1fr) minmax(12rem, 1.4fr) auto;
+    padding: 0.8rem;
+}
+
+.raid-events-page ::deep .event-signup-row__identity {
+    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.raid-events-page ::deep .event-signup-row__identity strong {
+    flex-basis: 100%;
+    font-size: 0.95rem;
+}
+
+.raid-events-page ::deep .event-signup-management {
+    border-top: 1px solid rgb(148 163 184 / 0.14);
+    padding-top: 1rem;
+}
+
+.raid-events-page ::deep .event-signup-management-row {
+    align-items: center;
+    background: rgb(15 23 42 / 0.38);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(11rem, 1fr) minmax(12rem, 1.3fr) minmax(8rem, auto) minmax(13rem, auto);
+    padding: 0.8rem;
+}
+
+.raid-events-page ::deep .event-signup-management-row--disabled {
+    background: rgb(15 23 42 / 0.28);
+}
+
+.raid-events-page ::deep .event-signup-management-row--unavailable {
+    border-style: dashed;
+    opacity: 0.78;
+}
+
+.raid-events-page ::deep .event-signup-management-row--busy {
+    border-color: rgb(215 180 106 / 0.36);
+}
+
+.raid-events-page ::deep .event-signup-management-row__status {
+    align-items: start;
+    display: grid;
+    gap: 0.35rem;
+    justify-items: start;
+}
+
+.raid-events-page ::deep .event-signup-actions {
+    justify-content: flex-end;
+}
+
+.raid-events-page ::deep .event-signup-action {
+    align-items: center;
+    background: rgb(2 6 23 / 0.58);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 999px;
+    color: #e5e7eb;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 900;
+    justify-content: center;
+    line-height: 1;
+    min-height: 1.9rem;
+    padding: 0.45rem 0.65rem;
+}
+
+.raid-events-page ::deep .event-signup-action:hover {
+    background: rgb(30 41 59 / 0.9);
+    border-color: rgb(215 180 106 / 0.36);
+}
+
+.raid-events-page ::deep .event-signup-action--current {
+    background: rgb(215 180 106 / 0.16);
+    border-color: rgb(215 180 106 / 0.42);
+    color: #fde68a;
+}
+
+.raid-events-page ::deep .event-signup-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+@media (max-width: 700px) {
+    .raid-events-page ::deep .event-create-form__grid,
+    .raid-events-page ::deep .event-signup-row,
+    .raid-events-page ::deep .event-signup-management-row {
+        grid-template-columns: 1fr;
+    }
+
+    .raid-events-page ::deep .event-signup-actions {
+        justify-content: flex-start;
+    }
+}
