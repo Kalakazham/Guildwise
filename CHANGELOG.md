@@ -12,6 +12,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Added the raid event overview and detail UI.
 - Added raid event creation UX on the raid events page.
 - Added raid event lifecycle foundation with scheduled/cancelled status and update/cancel use cases.
+- Added development-only startup migration application for local Postgres-backed Web runs.
 
 ### Changed
 
