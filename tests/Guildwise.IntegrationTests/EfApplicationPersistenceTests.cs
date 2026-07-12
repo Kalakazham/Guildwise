@@ -6,6 +6,8 @@ using Guildwise.Application.GuildMembers.AddPlayerToGuild;
 using Guildwise.Application.Players.DeletePlayer;
 using Guildwise.Application.RaidEvents.CancelRaidEvent;
 using Guildwise.Application.RaidEvents.CreateRaidEvent;
+using Guildwise.Application.RaidEvents.ListRaidEventSignups;
+using Guildwise.Application.RaidEvents.SetRaidEventSignup;
 using Guildwise.Application.RaidEvents.UpdateRaidEvent;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
@@ -289,6 +291,77 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         var raidEvent = await new EfRaidEventRepository(assertContext).GetByIdAsync(raidEventId);
         Assert.NotNull(raidEvent);
         Assert.Equal(RaidEventStatus.Cancelled, raidEvent.Status);
+    }
+
+    [Fact]
+    public async Task SetAndListRaidEventSignup_Persists_Signup_For_GuildMember()
+    {
+        var player = await AddPlayerWithMainCharacterAsync();
+        var guild = await AddGuildWithMemberAndRaidTeamAsync(player);
+        var raidTeam = guild.RaidTeams.Single();
+        Guid raidEventId;
+
+        using (var createEventContext = _fixture.CreateDbContext())
+        {
+            var createHandler = new CreateRaidEventHandler(
+                new EfGuildRepository(createEventContext),
+                new EfRaidEventRepository(createEventContext));
+
+            raidEventId = AssertSuccess(await createHandler.HandleAsync(new CreateRaidEventCommand(
+                guild.Id,
+                raidTeam.Id,
+                "Raid Night",
+                DateTimeOffset.UtcNow.AddDays(1),
+                null,
+                "Nerubar Palace",
+                RaidDifficulty.Normal,
+                null))).Id;
+        }
+
+        using (var signupContext = _fixture.CreateDbContext())
+        {
+            var handler = new SetRaidEventSignupHandler(
+                new EfGuildRepository(signupContext),
+                new EfPlayerRepository(signupContext),
+                new EfRaidEventRepository(signupContext));
+
+            var signup = AssertSuccess(await handler.HandleAsync(new SetRaidEventSignupCommand(
+                raidEventId,
+                player.Id,
+                RaidEventSignupStatus.Signed)));
+
+            Assert.Equal(RaidEventSignupStatus.Signed, signup.Status);
+            Assert.Equal(player.Id, signup.PlayerId);
+            Assert.True(signup.HasMainCharacter);
+        }
+
+        using (var updateContext = _fixture.CreateDbContext())
+        {
+            var handler = new SetRaidEventSignupHandler(
+                new EfGuildRepository(updateContext),
+                new EfPlayerRepository(updateContext),
+                new EfRaidEventRepository(updateContext));
+
+            var updated = AssertSuccess(await handler.HandleAsync(new SetRaidEventSignupCommand(
+                raidEventId,
+                player.Id,
+                RaidEventSignupStatus.Declined)));
+
+            Assert.Equal(RaidEventSignupStatus.Declined, updated.Status);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var listHandler = new ListRaidEventSignupsHandler(
+            new EfGuildRepository(assertContext),
+            new EfPlayerRepository(assertContext),
+            new EfRaidEventRepository(assertContext));
+
+        var signups = await listHandler.HandleAsync(new ListRaidEventSignupsQuery(raidEventId));
+        var listed = Assert.Single(signups);
+        Assert.Equal(player.Id, listed.PlayerId);
+        Assert.Equal(RaidEventSignupStatus.Declined, listed.Status);
+        Assert.True(listed.HasMainCharacter);
+        Assert.Equal(GuildRank.Member, listed.GuildRank);
     }
 
     [Fact]

@@ -670,6 +670,80 @@ public sealed class DomainModelTests
     }
 
     [Fact]
+    public void RaidEvent_SetSignup_Adds_New_Signup()
+    {
+        var raidEvent = CreateRaidEvent();
+        var playerId = Guid.NewGuid();
+
+        var signup = raidEvent.SetSignup(playerId, RaidEventSignupStatus.Signed);
+
+        Assert.Equal(raidEvent.Id, signup.RaidEventId);
+        Assert.Equal(playerId, signup.PlayerId);
+        Assert.Equal(RaidEventSignupStatus.Signed, signup.Status);
+        Assert.Same(signup, Assert.Single(raidEvent.Signups));
+    }
+
+    [Fact]
+    public void RaidEvent_SetSignup_Updates_Existing_Signup_For_Player()
+    {
+        var raidEvent = CreateRaidEvent();
+        var playerId = Guid.NewGuid();
+        var initial = raidEvent.SetSignup(playerId, RaidEventSignupStatus.Signed);
+
+        var updated = raidEvent.SetSignup(playerId, RaidEventSignupStatus.Tentative);
+
+        Assert.Same(initial, updated);
+        Assert.Single(raidEvent.Signups);
+        Assert.Equal(RaidEventSignupStatus.Tentative, updated.Status);
+    }
+
+    [Fact]
+    public void RaidEvent_SetSignup_Rejects_Empty_PlayerId()
+    {
+        var raidEvent = CreateRaidEvent();
+
+        Assert.Throws<ArgumentException>(() => raidEvent.SetSignup(Guid.Empty, RaidEventSignupStatus.Signed));
+    }
+
+    [Fact]
+    public void RaidEvent_SetSignup_Rejects_Unknown_And_Undefined_Status()
+    {
+        var raidEvent = CreateRaidEvent();
+        var playerId = Guid.NewGuid();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => raidEvent.SetSignup(playerId, RaidEventSignupStatus.Unknown));
+        Assert.Throws<ArgumentOutOfRangeException>(() => raidEvent.SetSignup(playerId, (RaidEventSignupStatus)999));
+    }
+
+    [Fact]
+    public void RaidEvent_SetSignup_Rejects_Cancelled_Event()
+    {
+        var raidEvent = CreateRaidEvent();
+        raidEvent.Cancel();
+
+        Assert.Throws<InvalidOperationException>(() => raidEvent.SetSignup(Guid.NewGuid(), RaidEventSignupStatus.Signed));
+    }
+
+    [Fact]
+    public void RaidEvent_Signups_Collection_Is_Not_Publicly_Mutable()
+    {
+        var raidEvent = CreateRaidEvent();
+        raidEvent.SetSignup(Guid.NewGuid(), RaidEventSignupStatus.Signed);
+
+        Assert.IsAssignableFrom<IReadOnlyCollection<RaidEventSignup>>(raidEvent.Signups);
+        Assert.False(raidEvent.Signups is ICollection<RaidEventSignup> { IsReadOnly: false });
+    }
+
+    [Fact]
+    public void RaidEvent_Missing_Response_Is_Not_Stored_As_Signup()
+    {
+        var raidEvent = CreateRaidEvent();
+
+        Assert.Empty(raidEvent.Signups);
+        Assert.DoesNotContain(RaidEventSignupStatus.Unknown, raidEvent.Signups.Select(signup => signup.Status));
+    }
+
+    [Fact]
     public void RaidEvent_Create_Rejects_Empty_Guild_Or_RaidTeam()
     {
         var startTime = DateTimeOffset.UtcNow.AddDays(1);
@@ -803,4 +877,15 @@ public sealed class DomainModelTests
         var player = Player.Create("Myrmi");
         return guild.AddMember(player, GuildRank.Officer);
     }
+
+    private static RaidEvent CreateRaidEvent()
+        => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
 }

@@ -21,7 +21,9 @@ using Guildwise.Application.Players.UpdatePlayer;
 using Guildwise.Application.RaidEvents.CancelRaidEvent;
 using Guildwise.Application.RaidEvents.CreateRaidEvent;
 using Guildwise.Application.RaidEvents.GetRaidEvent;
+using Guildwise.Application.RaidEvents.ListRaidEventSignups;
 using Guildwise.Application.RaidEvents.ListRaidEvents;
+using Guildwise.Application.RaidEvents.SetRaidEventSignup;
 using Guildwise.Application.RaidEvents.UpdateRaidEvent;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
@@ -75,6 +77,8 @@ public static class DependencyInjection
         services.AddScoped<ListRaidEventsHandler>();
         services.AddScoped<UpdateRaidEventHandler>();
         services.AddScoped<CancelRaidEventHandler>();
+        services.AddScoped<SetRaidEventSignupHandler>();
+        services.AddScoped<ListRaidEventSignupsHandler>();
 
         services.AddScoped<GetRaidTeamManagementOverviewHandler>();
 

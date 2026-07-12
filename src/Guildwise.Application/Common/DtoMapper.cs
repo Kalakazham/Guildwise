@@ -57,6 +57,31 @@ internal static class DtoMapper
             raidEvent.Status,
             raidEvent.Notes);
 
+    internal static RaidEventSignupDto ToDto(
+        RaidEvent raidEvent,
+        RaidEventSignup signup,
+        Player player,
+        GuildMember? guildMember)
+    {
+        var mainCharacter = player.MainCharacterId.HasValue
+            ? player.Characters.FirstOrDefault(character => character.Id == player.MainCharacterId.Value)
+            : null;
+
+        return new RaidEventSignupDto(
+            raidEvent.Id,
+            player.Id,
+            player.DisplayName,
+            signup.Status,
+            mainCharacter?.Id,
+            mainCharacter?.Name,
+            mainCharacter?.CharacterClass,
+            mainCharacter?.Specialization,
+            mainCharacter?.Role,
+            mainCharacter is not null,
+            guildMember?.Rank,
+            guildMember?.AdditionalRoles.ToList() ?? []);
+    }
+
     internal static GuildMemberDto ToDto(GuildMember member)
         => new(
             member.Id,

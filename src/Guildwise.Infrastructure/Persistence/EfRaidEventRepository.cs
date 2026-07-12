@@ -15,6 +15,7 @@ public sealed class EfRaidEventRepository : IRaidEventRepository
 
     public Task<RaidEvent?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => _dbContext.RaidEvents
+            .Include(raidEvent => raidEvent.Signups)
             .SingleOrDefaultAsync(raidEvent => raidEvent.Id == id, cancellationToken);
 
     public async Task<IReadOnlyCollection<RaidEvent>> ListAsync(CancellationToken cancellationToken = default)
@@ -48,6 +49,7 @@ public sealed class EfRaidEventRepository : IRaidEventRepository
 
     private IOrderedQueryable<RaidEvent> OrderedRaidEvents()
         => _dbContext.RaidEvents
+            .Include(raidEvent => raidEvent.Signups)
             .OrderBy(raidEvent => raidEvent.StartTime)
             .ThenBy(raidEvent => raidEvent.Title)
             .ThenBy(raidEvent => raidEvent.Id);

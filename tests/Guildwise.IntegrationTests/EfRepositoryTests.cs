@@ -296,6 +296,65 @@ public sealed class EfRepositoryTests : IAsyncLifetime
         Assert.Equal(RaidEventStatus.Cancelled, cancelled.Status);
     }
 
+    [Fact]
+    public async Task EfRaidEventRepository_Persists_RaidEvent_Signups()
+    {
+        var player = Player.Create(UniqueName("Player"));
+        var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
+        guild.AddMember(player, GuildRank.Member);
+        var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
+        var raidEvent = RaidEvent.Create(
+            guild.Id,
+            raidTeam.Id,
+            UniqueName("RaidEvent"),
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
+        raidEvent.SetSignup(player.Id, RaidEventSignupStatus.Signed);
+
+        using (var playerContext = _fixture.CreateDbContext())
+        {
+            await new EfPlayerRepository(playerContext).AddAsync(player);
+        }
+
+        using (var guildContext = _fixture.CreateDbContext())
+        {
+            await new EfGuildRepository(guildContext).AddAsync(guild);
+        }
+
+        using (var arrangeContext = _fixture.CreateDbContext())
+        {
+            await new EfRaidEventRepository(arrangeContext).AddAsync(raidEvent);
+        }
+
+        using (var assertContext = _fixture.CreateDbContext())
+        {
+            var loaded = await new EfRaidEventRepository(assertContext).GetByIdAsync(raidEvent.Id);
+
+            Assert.NotNull(loaded);
+            var signup = Assert.Single(loaded.Signups);
+            Assert.Equal(raidEvent.Id, signup.RaidEventId);
+            Assert.Equal(player.Id, signup.PlayerId);
+            Assert.Equal(RaidEventSignupStatus.Signed, signup.Status);
+        }
+
+        using (var updateContext = _fixture.CreateDbContext())
+        {
+            var loaded = await new EfRaidEventRepository(updateContext).GetByIdAsync(raidEvent.Id);
+            Assert.NotNull(loaded);
+            loaded.SetSignup(player.Id, RaidEventSignupStatus.Tentative);
+            await new EfRaidEventRepository(updateContext).SaveChangesAsync();
+        }
+
+        using var statusAssertContext = _fixture.CreateDbContext();
+        var updated = await new EfRaidEventRepository(statusAssertContext).GetByIdAsync(raidEvent.Id);
+        Assert.NotNull(updated);
+        var updatedSignup = Assert.Single(updated.Signups);
+        Assert.Equal(RaidEventSignupStatus.Tentative, updatedSignup.Status);
+    }
+
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
 

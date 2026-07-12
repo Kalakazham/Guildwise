@@ -3,6 +3,7 @@ using System;
 using Guildwise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Guildwise.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GuildwiseDbContext))]
-    partial class GuildwiseDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260712200803_AddRaidEventSignupFoundation")]
+    partial class AddRaidEventSignupFoundation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
