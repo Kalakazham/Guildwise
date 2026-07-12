@@ -7,10 +7,12 @@
 @using Guildwise.Application.Contracts.RaidEvents
 @using Guildwise.Application.Contracts.RaidTeams
 @using Guildwise.Application.Guilds.ListGuilds
+@using Guildwise.Application.RaidEvents.CancelRaidEvent
 @using Guildwise.Application.RaidEvents.CreateRaidEvent
 @using Guildwise.Application.RaidEvents.ListRaidEvents
 @using Guildwise.Application.RaidEvents.UpdateRaidEvent
 @using Guildwise.Domain
+@inject CancelRaidEventHandler CancelRaidEventHandler
 @inject CreateRaidEventHandler CreateRaidEventHandler
 @inject ListGuildsHandler ListGuildsHandler
 @inject ListRaidEventsHandler ListRaidEventsHandler
@@ -289,7 +291,7 @@
 
                             <button
                                 type="button"
-                                class="event-list-item @(isSelected ? "event-list-item--selected" : string.Empty)"
+                                class="@GetEventListItemClass(raidEvent, isSelected)"
                                 @onclick="() => SelectEvent(raidEvent.Id)"
                                 aria-pressed="@isSelected">
                                 <span class="event-list-item__title">@raidEvent.Title</span>
@@ -334,10 +336,16 @@
                                 <button type="button" class="event-action event-action--secondary" @onclick="() => StartEdit(selectedEvent)">
                                     Edit
                                 </button>
+                                @if (!isConfirmingCancel)
+                                {
+                                    <button type="button" class="event-action event-action--danger" disabled="@cancelInProgress" @onclick="RequestCancel">
+                                        Cancel event
+                                    </button>
+                                }
                             }
                             else if (selectedEvent.Status == RaidEventStatus.Cancelled)
                             {
-                                <span class="event-edit-hint">Cancelled events cannot be edited.</span>
+                                <span class="event-edit-hint">This event is already cancelled.</span>
                             }
                         </div>
                     </div>
@@ -429,6 +437,31 @@
                     }
                     else
                     {
+                        @if (!string.IsNullOrWhiteSpace(cancelMessage))
+                        {
+                            <div class="event-status-message event-status-message--@cancelStatus" role="status">
+                                @cancelMessage
+                            </div>
+                        }
+
+                        @if (selectedEvent.Status == RaidEventStatus.Scheduled && isConfirmingCancel)
+                        {
+                            <section class="event-cancel-confirm" aria-label="Confirm raid event cancellation">
+                                <div>
+                                    <strong>Cancel this raid event?</strong>
+                                    <p>The event will stay visible with cancelled status.</p>
+                                </div>
+                                <div class="event-cancel-confirm__actions">
+                                    <button type="button" class="event-action event-action--danger" disabled="@cancelInProgress" @onclick="CancelRaidEventAsync">
+                                        @(cancelInProgress ? "Cancelling..." : "Confirm cancellation")
+                                    </button>
+                                    <button type="button" class="event-action event-action--secondary" disabled="@cancelInProgress" @onclick="DismissCancelConfirmation">
+                                        Keep scheduled
+                                    </button>
+                                </div>
+                            </section>
+                        }
+
                         @if (!string.IsNullOrWhiteSpace(editMessage))
                         {
                             <div class="event-status-message event-status-message--@editStatus" role="status">
@@ -494,6 +527,10 @@
     private bool isEditingSelectedEvent;
     private string? editMessage;
     private string editStatus = "success";
+    private bool cancelInProgress;
+    private bool isConfirmingCancel;
+    private string? cancelMessage;
+    private string cancelStatus = "success";
     private Guid? selectedRaidEventId;
     private string createTitle = string.Empty;
     private string createRaidTeamId = string.Empty;
@@ -575,6 +612,7 @@
             raidEvents = [];
             selectedRaidEventId = null;
             StopEdit(clearMessage: true);
+            ResetCancelState(clearMessage: true);
             loadFailure = "An unexpected technical failure occurred while loading raid events.";
         }
         finally
@@ -659,11 +697,53 @@
         }
     }
 
+    private async Task CancelRaidEventAsync()
+    {
+        cancelMessage = null;
+
+        var selectedEvent = SelectedEvent;
+        if (selectedEvent is null)
+        {
+            ShowCancelFailure(new Failure(FailureType.NotFound, "Selected raid event was not found."));
+            isConfirmingCancel = false;
+            return;
+        }
+
+        cancelInProgress = true;
+
+        try
+        {
+            var result = await CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(selectedEvent.Id));
+            if (result.IsFailure)
+            {
+                ShowCancelFailure(result.Failure!);
+                isConfirmingCancel = false;
+                return;
+            }
+
+            var cancelledEvent = result.Value ?? throw new InvalidOperationException("Successful cancel raid event result did not include a value.");
+            StopEdit(clearMessage: true);
+            isConfirmingCancel = false;
+            ShowCancelSuccess($"Cancelled {cancelledEvent.Title}.");
+            await LoadRaidEventsAsync(cancelledEvent.Id);
+        }
+        catch
+        {
+            ShowCancelTechnicalFailure("An unexpected technical failure occurred while cancelling the raid event.");
+            isConfirmingCancel = false;
+        }
+        finally
+        {
+            cancelInProgress = false;
+        }
+    }
+
     private void SelectEvent(Guid raidEventId)
     {
         if (selectedRaidEventId != raidEventId)
         {
             StopEdit(clearMessage: true);
+            ResetCancelState(clearMessage: true);
         }
 
         selectedRaidEventId = raidEventId;
@@ -681,6 +761,7 @@
         {
             selectedRaidEventId = OrderedRaidEvents.First().Id;
             StopEdit(clearMessage: true);
+            ResetCancelState(clearMessage: true);
         }
     }
 
@@ -811,6 +892,8 @@
 
     private void StartEdit(RaidEventDto raidEvent)
     {
+        ResetCancelState(clearMessage: true);
+
         if (raidEvent.Status != RaidEventStatus.Scheduled)
         {
             ShowEditFailure(new Failure(FailureType.BusinessRule, "Cancelled raid events cannot be updated."));
@@ -833,6 +916,18 @@
     private void DiscardEditChanges()
     {
         StopEdit(clearMessage: true);
+    }
+
+    private void RequestCancel()
+    {
+        editMessage = null;
+        cancelMessage = null;
+        isConfirmingCancel = true;
+    }
+
+    private void DismissCancelConfirmation()
+    {
+        ResetCancelState(clearMessage: true);
     }
 
     private void OnCreateStartDateTimeChanged(ChangeEventArgs args)
@@ -875,6 +970,7 @@
     {
         isEditingSelectedEvent = false;
         editInProgress = false;
+        isConfirmingCancel = false;
         editTitle = string.Empty;
         editRaidTeamId = string.Empty;
         editStartDateTime = string.Empty;
@@ -923,6 +1019,35 @@
     {
         editMessage = message;
         editStatus = "error";
+    }
+
+    private void ShowCancelSuccess(string message)
+    {
+        cancelMessage = message;
+        cancelStatus = "success";
+    }
+
+    private void ShowCancelFailure(Failure failure)
+    {
+        cancelMessage = $"{FormatFailureType(failure.Type)}: {failure.Message}";
+        cancelStatus = "error";
+    }
+
+    private void ShowCancelTechnicalFailure(string message)
+    {
+        cancelMessage = message;
+        cancelStatus = "error";
+    }
+
+    private void ResetCancelState(bool clearMessage)
+    {
+        cancelInProgress = false;
+        isConfirmingCancel = false;
+
+        if (clearMessage)
+        {
+            cancelMessage = null;
+        }
     }
 
     private void EnsureEditStateIsValid()
@@ -1061,6 +1186,22 @@
             FailureType.BusinessRule => "Cannot complete action",
             _ => "Failure"
         };
+
+    private static string GetEventListItemClass(RaidEventDto raidEvent, bool isSelected)
+    {
+        var classes = "event-list-item";
+        if (isSelected)
+        {
+            classes += " event-list-item--selected";
+        }
+
+        if (raidEvent.Status == RaidEventStatus.Cancelled)
+        {
+            classes += " event-list-item--cancelled";
+        }
+
+        return classes;
+    }
 
     private static string FormatEventStatus(RaidEventStatus status)
         => status switch
