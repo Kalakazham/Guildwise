@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Added raid event edit UX for scheduled events.
 - Added raid event cancellation UX with inline confirmation.
 - Added raid event signup foundation with Domain, Application and persistence support.
+- Added raid event signup overview UI with summary, role composition and signup list display.
 
 ### Changed
 
