@@ -1,0 +1,554 @@
+.raid-team-management-page {
+    background:
+        radial-gradient(circle at 12% 0%, rgb(215 180 106 / 0.18), transparent 30%),
+        radial-gradient(circle at 88% 20%, rgb(163 48 201 / 0.1), transparent 28%),
+        linear-gradient(180deg, #111827 0%, #07111f 44%, #050914 100%);
+    color: #e5e7eb;
+    display: grid;
+    gap: 1.35rem;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.raid-action {
+    align-items: center;
+    background: #d7b46a;
+    border: 1px solid #f0d58a;
+    border-radius: 6px;
+    color: #111827;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+}
+
+.raid-action:hover {
+    background: #f0d58a;
+}
+
+.raid-action--secondary {
+    background: rgb(15 23 42 / 0.84);
+    border-color: rgb(148 163 184 / 0.32);
+    color: #e5e7eb;
+}
+
+.raid-action--secondary:hover {
+    background: rgb(30 41 59 / 0.96);
+}
+
+.raid-summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.raid-management-grid {
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: minmax(18rem, 0.75fr) minmax(0, 1.55fr);
+}
+
+.raid-management-sidebar {
+    align-content: start;
+    display: grid;
+    gap: 1.1rem;
+}
+
+.guild-context-block {
+    display: grid;
+    gap: 1rem;
+}
+
+.guild-context-block__label,
+.guild-selector {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.guild-context-block h2 {
+    color: #f8fafc;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.guild-context-block p {
+    color: #a8b3c7;
+    margin: 0.35rem 0 0;
+}
+
+.guild-selector {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.guild-selector select {
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 6px;
+    color: #f8fafc;
+    font: inherit;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+}
+
+.guild-selector select:focus,
+.raid-action:focus,
+.team-list-item:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.team-list-panel {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.team-list-item {
+    background: rgb(2 6 23 / 0.52);
+    border: 1px solid rgb(148 163 184 / 0.16);
+    border-radius: 8px;
+    color: #e5e7eb;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: 0.55rem;
+    padding: 0.9rem;
+    text-align: left;
+    width: 100%;
+}
+
+.team-list-item:hover,
+.team-list-item--selected {
+    background: rgb(30 41 59 / 0.64);
+    border-color: rgb(215 180 106 / 0.42);
+}
+
+.team-list-item__name {
+    color: #f8fafc;
+    font-weight: 900;
+}
+
+.team-list-item__meta {
+    color: #a8b3c7;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.team-composition-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.team-composition-strip span {
+    background: rgb(15 23 42 / 0.9);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 999px;
+    color: #cbd5e1;
+    font-size: 0.74rem;
+    font-weight: 900;
+    line-height: 1;
+    padding: 0.35rem 0.5rem;
+}
+
+.team-detail-header {
+    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.team-detail-header h2 {
+    color: #f8fafc;
+    font-size: 1.45rem;
+    margin: 0.65rem 0 0.35rem;
+}
+
+.team-detail-header p {
+    color: #a8b3c7;
+    margin: 0;
+}
+
+.composition-cards {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(5.25rem, 1fr));
+}
+
+.composition-cards div {
+    background: rgb(2 6 23 / 0.5);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    padding: 0.8rem;
+    text-align: center;
+}
+
+.composition-cards span {
+    color: #f8fafc;
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 900;
+}
+
+.composition-cards small {
+    color: #8390a3;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.composition-insights {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-bottom: 1rem;
+}
+
+.composition-insight-card {
+    background: rgb(2 6 23 / 0.38);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.95rem;
+}
+
+.composition-insight-card h3 {
+    color: #f8fafc;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.class-overview-list,
+.composition-hint-list {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.class-overview-item {
+    align-items: center;
+    background: rgb(15 23 42 / 0.72);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.35rem;
+}
+
+.class-overview-item > span {
+    color: #f8fafc;
+    font-size: 0.9rem;
+    font-weight: 900;
+    min-width: 1.35rem;
+    text-align: center;
+}
+
+.composition-hint {
+    background: rgb(215 180 106 / 0.12);
+    border: 1px solid rgb(215 180 106 / 0.28);
+    border-radius: 999px;
+    color: #fde68a;
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1;
+    padding: 0.45rem 0.6rem;
+}
+
+.raid-status-message {
+    border-radius: 8px;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    padding: 0.8rem 1rem;
+}
+
+.raid-status-message--success {
+    background: rgb(22 101 52 / 0.24);
+    border: 1px solid rgb(74 222 128 / 0.34);
+    color: #bbf7d0;
+}
+
+.raid-status-message--error {
+    background: rgb(127 29 29 / 0.24);
+    border: 1px solid rgb(248 113 113 / 0.34);
+    color: #fecaca;
+}
+
+.raid-member-table-wrap {
+    overflow-x: auto;
+}
+
+.raid-member-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 58rem;
+    width: 100%;
+}
+
+.raid-member-table th,
+.raid-member-table td {
+    border-bottom: 1px solid rgb(148 163 184 / 0.14);
+    padding: 0.95rem 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.raid-member-table th {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.raid-member-table tbody tr:hover {
+    background: rgb(30 41 59 / 0.42);
+}
+
+.player-cell,
+.character-cell {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.player-cell span,
+.character-cell span {
+    color: #f8fafc;
+    font-weight: 800;
+}
+
+.character-cell small {
+    color: #8390a3;
+    display: block;
+    font-size: 0.78rem;
+}
+
+.badge-stack {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+}
+
+.badge-cluster {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.48rem;
+}
+
+.raid-row-action {
+    align-items: center;
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.24);
+    border-radius: 6px;
+    color: #e5e7eb;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.75rem;
+}
+
+.raid-row-action:hover:not(:disabled) {
+    background: rgb(30 41 59 / 0.96);
+    border-color: rgb(215 180 106 / 0.42);
+}
+
+.raid-row-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.raid-row-action--primary {
+    background: #d7b46a;
+    border-color: #f0d58a;
+    color: #111827;
+}
+
+.raid-row-action--primary:hover:not(:disabled) {
+    background: #f0d58a;
+}
+
+.available-players-section {
+    border-top: 1px solid rgb(148 163 184 / 0.14);
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1.2rem;
+    padding-top: 1.2rem;
+}
+
+.available-players-section__header h3 {
+    color: #f8fafc;
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.available-players-section__header p {
+    color: #a8b3c7;
+    margin: 0.35rem 0 0;
+}
+
+.available-player-controls {
+    background: rgb(2 6 23 / 0.38);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.9rem;
+    padding: 0.95rem;
+}
+
+.available-player-controls__summary {
+    align-items: center;
+    color: #a8b3c7;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    font-weight: 800;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.available-player-controls__grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+}
+
+.available-player-control {
+    color: #cbd5e1;
+    display: grid;
+    font-size: 0.76rem;
+    font-weight: 900;
+    gap: 0.4rem;
+    text-transform: uppercase;
+}
+
+.available-player-control--wide {
+    grid-column: span 2;
+}
+
+.available-player-control input,
+.available-player-control select {
+    background: rgb(15 23 42 / 0.92);
+    border: 1px solid rgb(148 163 184 / 0.22);
+    border-radius: 6px;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 0.9rem;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+}
+
+.available-player-control input:focus,
+.available-player-control select:focus,
+.raid-link-action:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.available-player-control input::placeholder {
+    color: #64748b;
+}
+
+.raid-link-action {
+    background: transparent;
+    border: 0;
+    color: #f7d98b;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 900;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.18rem;
+}
+
+.raid-link-action:hover {
+    color: #fde68a;
+}
+
+.available-player-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.available-player-card {
+    align-items: center;
+    background: rgb(2 6 23 / 0.42);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: minmax(9rem, 1fr) minmax(12rem, 1.4fr) minmax(8rem, 1fr) auto;
+    padding: 0.85rem;
+}
+
+.available-player-card__identity {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.available-player-card__identity span {
+    color: #f8fafc;
+    font-weight: 900;
+}
+
+.available-player-card__identity small {
+    color: #8390a3;
+    font-size: 0.78rem;
+}
+
+.available-player-card__badges,
+.available-player-card__teams {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.48rem;
+}
+
+.muted {
+    color: #8390a3;
+}
+
+@media (max-width: 1080px) {
+    .raid-management-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .composition-insights {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .raid-team-management-page {
+        padding: 1rem;
+    }
+
+    .composition-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .available-player-control--wide {
+        grid-column: auto;
+    }
+
+    .available-player-card {
+        align-items: stretch;
+        grid-template-columns: 1fr;
+    }
+}

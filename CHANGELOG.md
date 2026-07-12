@@ -22,9 +22,12 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Changed
 
+- Refactored remaining large Web pages and accumulated test suites to clear code quality warnings.
 - Refactored the raid events page into focused Web components without changing behavior.
 
 ### Fixed
+
+- Fixed known-debt refactor regressions in raid team tests and raid team management UI behavior.
 
 ## [0.4.0] - 2026-07-11
 

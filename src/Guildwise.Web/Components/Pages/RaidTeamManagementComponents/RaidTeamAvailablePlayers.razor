@@ -1,0 +1,250 @@
+@using Guildwise.Application.Contracts.RaidTeamManagement
+@using Guildwise.Domain
+
+@if (SelectedTeam is not null)
+{
+    var availablePlayers = GetAvailablePlayersForSelectedTeam();
+    var visibleAvailablePlayers = GetVisibleAvailablePlayers();
+
+    <section class="available-players-section" aria-label="Available guild members">
+        <div class="available-players-section__header">
+            <div>
+                <h3>Available Guild Members</h3>
+                <p>Guild members not currently assigned to @SelectedTeam.Name.</p>
+            </div>
+        </div>
+
+        @if (availablePlayers.Count == 0)
+        {
+            <EmptyState Title="No available players to add." Message="Every guild member is already assigned to this raid team." />
+        }
+        else
+        {
+            <div class="available-player-controls" aria-label="Available guild member search and filters">
+                <div class="available-player-controls__summary">
+                    <span>Showing @visibleAvailablePlayers.Count of @availablePlayers.Count available guild members</span>
+                    @if (HasActiveAvailablePlayerControls)
+                    {
+                        <button type="button" class="raid-link-action" @onclick="ResetAvailablePlayerControls">Reset controls</button>
+                    }
+                </div>
+
+                <div class="available-player-controls__grid">
+                    <label class="available-player-control available-player-control--wide">
+                        Search
+                        <input @bind="availableSearchText" @bind:event="oninput" placeholder="Player, main character, realm, raid team" />
+                    </label>
+
+                    <label class="available-player-control">
+                        Class
+                        <select @bind="selectedAvailableClass">
+                            <option value="@AllFilterValue">All classes</option>
+                            @foreach (var characterClass in AvailablePlayerClasses)
+                            {
+                                <option value="@characterClass.ToString()">@RosterDisplayText.CharacterClass(characterClass)</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="available-player-control">
+                        Role
+                        <select @bind="selectedAvailableRole">
+                            <option value="@AllFilterValue">All roles</option>
+                            @foreach (var role in StableRoles)
+                            {
+                                <option value="@role.ToString()">@RosterDisplayText.CharacterRole(role)</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="available-player-control">
+                        Main
+                        <select @bind="selectedAvailableMainState">
+                            <option value="@AllFilterValue">All main states</option>
+                            <option value="@HasMainFilterValue">Has main</option>
+                            <option value="@MissingMainFilterValue">Missing main</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            @if (visibleAvailablePlayers.Count == 0)
+            {
+                <EmptyState Title="No matching available players." Message="No available guild members match the current search and filters. Reset the controls or broaden the search.">
+                    <Actions><button type="button" class="raid-action" @onclick="ResetAvailablePlayerControls">Reset controls</button></Actions>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="available-player-list">
+                    @foreach (var player in visibleAvailablePlayers)
+                    {
+                        <article class="available-player-card">
+                            <div class="available-player-card__identity">
+                                <span>@player.PlayerDisplayName</span>
+                                @if (player.HasMainCharacter)
+                                {
+                                    <small>@player.MainCharacterName - @player.CharacterRegion - @player.CharacterRealm</small>
+                                }
+                                else
+                                {
+                                    <small>No main character</small>
+                                }
+                            </div>
+
+                            <div class="available-player-card__badges">
+                                <CharacterClassBadge Value="player.CharacterClass" />
+                                <CharacterRoleBadge Value="player.Role" />
+                                <MainAltBadge HasMainCharacter="player.HasMainCharacter" />
+                                <GuildRankBadge Value="player.GuildRank" />
+                            </div>
+
+                            <div class="available-player-card__teams">
+                                @if (player.RaidTeamNames.Count == 0)
+                                {
+                                    <span class="muted">No raid team</span>
+                                }
+                                else
+                                {
+                                    @foreach (var teamName in player.RaidTeamNames)
+                                    {
+                                        <RaidTeamBadge Name="@teamName" />
+                                    }
+                                }
+                            </div>
+
+                            <button type="button" class="raid-row-action raid-row-action--primary" disabled="@(!player.HasMainCharacter || ActionInProgress)" title="@GetAddPlayerTitle(player)" @onclick="() => OnAddPlayer.InvokeAsync(player)">Add</button>
+                        </article>
+                    }
+                </div>
+            }
+        }
+    </section>
+}
+
+@code {
+    private const string AllFilterValue = "all";
+    private const string HasMainFilterValue = "has-main";
+    private const string MissingMainFilterValue = "missing-main";
+
+    private static readonly IReadOnlyList<CharacterRole> StableRoles =
+    [
+        CharacterRole.Tank,
+        CharacterRole.Healer,
+        CharacterRole.Damage
+    ];
+
+    private string availableSearchText = string.Empty;
+    private string selectedAvailableClass = AllFilterValue;
+    private string selectedAvailableRole = AllFilterValue;
+    private string selectedAvailableMainState = AllFilterValue;
+    private bool hasTrackedAvailablePlayerContext;
+    private Guid? previousAvailablePlayerGuildId;
+    private Guid? previousAvailablePlayerRaidTeamId;
+
+    [Parameter, EditorRequired]
+    public required RaidTeamManagementGuildDto Guild { get; init; }
+
+    [Parameter]
+    public RaidTeamManagementTeamDto? SelectedTeam { get; init; }
+
+    [Parameter]
+    public bool ActionInProgress { get; init; }
+
+    [Parameter]
+    public EventCallback<AvailableRaidTeamPlayerDto> OnAddPlayer { get; init; }
+
+    private bool HasActiveAvailablePlayerControls
+        => !string.IsNullOrWhiteSpace(availableSearchText)
+            || selectedAvailableClass != AllFilterValue
+            || selectedAvailableRole != AllFilterValue
+            || selectedAvailableMainState != AllFilterValue;
+
+    protected override void OnParametersSet()
+    {
+        var currentGuildId = Guild.Id;
+        var currentRaidTeamId = SelectedTeam?.Id;
+
+        if (hasTrackedAvailablePlayerContext
+            && (previousAvailablePlayerGuildId != currentGuildId
+                || previousAvailablePlayerRaidTeamId != currentRaidTeamId))
+        {
+            ResetAvailablePlayerControls();
+        }
+
+        previousAvailablePlayerGuildId = currentGuildId;
+        previousAvailablePlayerRaidTeamId = currentRaidTeamId;
+        hasTrackedAvailablePlayerContext = true;
+    }
+
+    private IReadOnlyList<CharacterClass> AvailablePlayerClasses
+        => GetAvailablePlayersForSelectedTeam()
+            .Where(player => player.CharacterClass.HasValue)
+            .Select(player => player.CharacterClass!.Value)
+            .Distinct()
+            .OrderBy(RosterDisplayText.CharacterClass, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private IReadOnlyList<AvailableRaidTeamPlayerDto> GetAvailablePlayersForSelectedTeam()
+        => SelectedTeam is null
+            ? []
+            : Guild.AvailablePlayers
+                .Where(player => !player.RaidTeamIds.Contains(SelectedTeam.Id))
+                .OrderBy(player => player.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(player => player.PlayerId)
+                .ToList();
+
+    private IReadOnlyList<AvailableRaidTeamPlayerDto> GetVisibleAvailablePlayers()
+        => GetAvailablePlayersForSelectedTeam()
+            .Where(MatchesAvailableSearch)
+            .Where(MatchesAvailableClass)
+            .Where(MatchesAvailableRole)
+            .Where(MatchesAvailableMainState)
+            .OrderBy(player => player.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(player => player.PlayerId)
+            .ToList();
+
+    private static string GetAddPlayerTitle(AvailableRaidTeamPlayerDto player)
+        => player.HasMainCharacter
+            ? "Add player to raid team"
+            : "Players need a main character before they can be added to a raid team";
+
+    private bool MatchesAvailableSearch(AvailableRaidTeamPlayerDto player)
+    {
+        if (string.IsNullOrWhiteSpace(availableSearchText))
+        {
+            return true;
+        }
+
+        var search = availableSearchText.Trim();
+        return ContainsSearch(player.PlayerDisplayName, search)
+            || ContainsSearch(player.MainCharacterName, search)
+            || ContainsSearch(player.CharacterRealm, search)
+            || player.RaidTeamNames.Any(teamName => ContainsSearch(teamName, search));
+    }
+
+    private bool MatchesAvailableClass(AvailableRaidTeamPlayerDto player)
+        => selectedAvailableClass == AllFilterValue || player.CharacterClass?.ToString() == selectedAvailableClass;
+
+    private bool MatchesAvailableRole(AvailableRaidTeamPlayerDto player)
+        => selectedAvailableRole == AllFilterValue || player.Role?.ToString() == selectedAvailableRole;
+
+    private bool MatchesAvailableMainState(AvailableRaidTeamPlayerDto player)
+        => selectedAvailableMainState switch
+        {
+            HasMainFilterValue => player.HasMainCharacter,
+            MissingMainFilterValue => !player.HasMainCharacter,
+            _ => true
+        };
+
+    private void ResetAvailablePlayerControls()
+    {
+        availableSearchText = string.Empty;
+        selectedAvailableClass = AllFilterValue;
+        selectedAvailableRole = AllFilterValue;
+        selectedAvailableMainState = AllFilterValue;
+    }
+
+    private static bool ContainsSearch(string? value, string search)
+        => value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
+}
