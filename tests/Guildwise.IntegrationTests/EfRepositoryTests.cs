@@ -237,7 +237,7 @@ public sealed class EfRepositoryTests : IAsyncLifetime
     {
         var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
         var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
-        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+        var startTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
         var endTime = startTime.AddHours(3);
         var raidEvent = RaidEvent.Create(
             guild.Id,
@@ -270,9 +270,11 @@ public sealed class EfRepositoryTests : IAsyncLifetime
         Assert.Equal(guild.Id, loaded.GuildId);
         Assert.Equal(raidTeam.Id, loaded.RaidTeamId);
         Assert.Equal(raidEvent.Title, loaded.Title);
-        AssertDateTimeOffsetCloseTo(startTime, loaded.StartTime);
+        Assert.Equal(TimeSpan.Zero, loaded.StartTime.Offset);
+        AssertDateTimeOffsetCloseTo(startTime.ToUniversalTime(), loaded.StartTime);
         Assert.NotNull(loaded.EndTime);
-        AssertDateTimeOffsetCloseTo(endTime, loaded.EndTime.Value);
+        Assert.Equal(TimeSpan.Zero, loaded.EndTime.Value.Offset);
+        AssertDateTimeOffsetCloseTo(endTime.ToUniversalTime(), loaded.EndTime.Value);
         Assert.Equal("Nerubar Palace", loaded.InstanceName);
         Assert.Equal(RaidDifficulty.Heroic, loaded.Difficulty);
         Assert.Equal("Bring flasks.", loaded.Notes);

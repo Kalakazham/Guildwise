@@ -150,7 +150,7 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
             raidTeamId = AssertSuccess(raidTeamResult).Id;
         }
 
-        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+        var startTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
 
         using (var actContext = _fixture.CreateDbContext())
         {
@@ -174,7 +174,8 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         Assert.Equal(guild.Id, raidEvent.GuildId);
         Assert.Equal(raidTeamId, raidEvent.RaidTeamId);
         Assert.Equal("Raid Night", raidEvent.Title);
-        AssertDateTimeOffsetCloseTo(startTime, raidEvent.StartTime);
+        Assert.Equal(TimeSpan.Zero, raidEvent.StartTime.Offset);
+        AssertDateTimeOffsetCloseTo(startTime.ToUniversalTime(), raidEvent.StartTime);
         Assert.Equal("Nerubar Palace", raidEvent.InstanceName);
         Assert.Equal(RaidDifficulty.Normal, raidEvent.Difficulty);
     }

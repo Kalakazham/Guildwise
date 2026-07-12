@@ -1208,7 +1208,7 @@ public sealed class ApplicationUseCaseTests
         var context = new TestContext();
         var guild = AssertSuccess(await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Guildwise", "EU", "Draenor")));
         var raidTeam = AssertSuccess(await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(guild.Id, "Team One")));
-        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+        var startTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
         var endTime = startTime.AddHours(3);
 
         var raidEvent = AssertSuccess(await context.CreateRaidEventHandler.HandleAsync(new CreateRaidEventCommand(
@@ -1224,12 +1224,20 @@ public sealed class ApplicationUseCaseTests
         Assert.Equal(guild.Id, raidEvent.GuildId);
         Assert.Equal(raidTeam.Id, raidEvent.RaidTeamId);
         Assert.Equal("Liberation of Undermine", raidEvent.Title);
-        Assert.Equal(startTime, raidEvent.StartTime);
-        Assert.Equal(endTime, raidEvent.EndTime);
+        Assert.Equal(TimeSpan.Zero, raidEvent.StartTime.Offset);
+        Assert.Equal(startTime.ToUniversalTime(), raidEvent.StartTime);
+        Assert.NotNull(raidEvent.EndTime);
+        Assert.Equal(TimeSpan.Zero, raidEvent.EndTime.Value.Offset);
+        Assert.Equal(endTime.ToUniversalTime(), raidEvent.EndTime.Value);
         Assert.Equal("Liberation of Undermine", raidEvent.InstanceName);
         Assert.Equal(RaidDifficulty.Heroic, raidEvent.Difficulty);
         Assert.Equal("Bring flasks.", raidEvent.Notes);
-        Assert.Equal(raidEvent.Id, (await context.RaidEventRepository.GetByIdAsync(raidEvent.Id))?.Id);
+
+        var stored = await context.RaidEventRepository.GetByIdAsync(raidEvent.Id);
+        Assert.NotNull(stored);
+        Assert.Equal(raidEvent.Id, stored.Id);
+        Assert.Equal(TimeSpan.Zero, stored.StartTime.Offset);
+        Assert.Equal(startTime.ToUniversalTime(), stored.StartTime);
     }
 
     [Fact]
