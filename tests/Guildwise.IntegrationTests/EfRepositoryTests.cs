@@ -51,6 +51,11 @@ public sealed class EfRepositoryTests : IAsyncLifetime
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
         Assert.Contains(
             services,
+            descriptor => descriptor.ServiceType == typeof(IRaidEventRepository)
+                && descriptor.ImplementationType == typeof(EfRaidEventRepository)
+                && descriptor.Lifetime == ServiceLifetime.Scoped);
+        Assert.Contains(
+            services,
             descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
                 && descriptor.ImplementationType == typeof(EfTransactionRunner)
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
@@ -227,8 +232,59 @@ public sealed class EfRepositoryTests : IAsyncLifetime
         Assert.Equal(player.Id, loadedRaidTeamMember.PlayerId);
     }
 
+    [Fact]
+    public async Task EfRaidEventRepository_Saves_Loads_And_Lists_RaidEvent()
+    {
+        var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+        var endTime = startTime.AddHours(3);
+        var raidEvent = RaidEvent.Create(
+            guild.Id,
+            raidTeam.Id,
+            UniqueName("RaidEvent"),
+            startTime,
+            endTime,
+            "Nerubar Palace",
+            RaidDifficulty.Heroic,
+            "Bring flasks.");
+
+        using (var guildContext = _fixture.CreateDbContext())
+        {
+            await new EfGuildRepository(guildContext).AddAsync(guild);
+        }
+
+        using (var arrangeContext = _fixture.CreateDbContext())
+        {
+            await new EfRaidEventRepository(arrangeContext).AddAsync(raidEvent);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var repository = new EfRaidEventRepository(assertContext);
+        var loaded = await repository.GetByIdAsync(raidEvent.Id);
+        var guildEvents = await repository.ListForGuildAsync(guild.Id);
+        var raidTeamEvents = await repository.ListForRaidTeamAsync(raidTeam.Id);
+
+        Assert.NotNull(loaded);
+        Assert.Equal(raidEvent.Id, loaded.Id);
+        Assert.Equal(guild.Id, loaded.GuildId);
+        Assert.Equal(raidTeam.Id, loaded.RaidTeamId);
+        Assert.Equal(raidEvent.Title, loaded.Title);
+        AssertDateTimeOffsetCloseTo(startTime, loaded.StartTime);
+        Assert.NotNull(loaded.EndTime);
+        AssertDateTimeOffsetCloseTo(endTime, loaded.EndTime.Value);
+        Assert.Equal("Nerubar Palace", loaded.InstanceName);
+        Assert.Equal(RaidDifficulty.Heroic, loaded.Difficulty);
+        Assert.Equal("Bring flasks.", loaded.Notes);
+        Assert.Equal(raidEvent.Id, Assert.Single(guildEvents).Id);
+        Assert.Equal(raidEvent.Id, Assert.Single(raidTeamEvents).Id);
+    }
+
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
+
+    private static void AssertDateTimeOffsetCloseTo(DateTimeOffset expected, DateTimeOffset actual)
+        => Assert.InRange((actual - expected).Duration(), TimeSpan.Zero, TimeSpan.FromMilliseconds(1));
 
     private sealed class ThrowOnSecondSaveChangesInterceptor : SaveChangesInterceptor
     {

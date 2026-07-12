@@ -4,6 +4,7 @@ using Guildwise.Application.Characters.SetMainCharacter;
 using Guildwise.Application.Common.Results;
 using Guildwise.Application.GuildMembers.AddPlayerToGuild;
 using Guildwise.Application.Players.DeletePlayer;
+using Guildwise.Application.RaidEvents.CreateRaidEvent;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
 using Guildwise.Domain;
@@ -136,6 +137,49 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreateRaidEvent_Persists_Event_For_Existing_RaidTeam()
+    {
+        var guild = await AddGuildAsync();
+        var raidTeamName = UniqueName("RaidTeam");
+        Guid raidTeamId;
+
+        using (var raidTeamContext = _fixture.CreateDbContext())
+        {
+            var raidTeamResult = await new CreateRaidTeamHandler(new EfGuildRepository(raidTeamContext))
+                .HandleAsync(new CreateRaidTeamCommand(guild.Id, raidTeamName));
+            raidTeamId = AssertSuccess(raidTeamResult).Id;
+        }
+
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+
+        using (var actContext = _fixture.CreateDbContext())
+        {
+            var handler = new CreateRaidEventHandler(
+                new EfGuildRepository(actContext),
+                new EfRaidEventRepository(actContext));
+
+            AssertSuccess(await handler.HandleAsync(new CreateRaidEventCommand(
+                guild.Id,
+                raidTeamId,
+                "Raid Night",
+                startTime,
+                null,
+                "Nerubar Palace",
+                RaidDifficulty.Normal,
+                null)));
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var raidEvent = Assert.Single(await new EfRaidEventRepository(assertContext).ListForRaidTeamAsync(raidTeamId));
+        Assert.Equal(guild.Id, raidEvent.GuildId);
+        Assert.Equal(raidTeamId, raidEvent.RaidTeamId);
+        Assert.Equal("Raid Night", raidEvent.Title);
+        AssertDateTimeOffsetCloseTo(startTime, raidEvent.StartTime);
+        Assert.Equal("Nerubar Palace", raidEvent.InstanceName);
+        Assert.Equal(RaidDifficulty.Normal, raidEvent.Difficulty);
+    }
+
+    [Fact]
     public async Task DeletePlayer_Rolls_Back_Guild_Changes_When_Player_Removal_Throws()
     {
         var player = await AddPlayerWithMainCharacterAsync();
@@ -260,12 +304,16 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
 
-    private static void AssertSuccess<T>(Result<T> result)
+    private static T AssertSuccess<T>(Result<T> result)
     {
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Null(result.Failure);
+        return result.Value;
     }
+
+    private static void AssertDateTimeOffsetCloseTo(DateTimeOffset expected, DateTimeOffset actual)
+        => Assert.InRange((actual - expected).Duration(), TimeSpan.Zero, TimeSpan.FromMilliseconds(1));
 
     private sealed class ThrowingRemovePlayerRepository : IPlayerRepository
     {

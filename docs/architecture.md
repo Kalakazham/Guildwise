@@ -234,6 +234,7 @@ Allowed repository interfaces:
 ```text
 IGuildRepository
 IPlayerRepository
+IRaidEventRepository
 ```
 
 Do not create repositories for:
@@ -249,6 +250,7 @@ Reason:
 
 * Characters are managed through `Player`.
 * RaidTeams and GuildMembers are managed through `Guild`.
+* RaidEvents are managed through `RaidEvent` because raid events are their own aggregate root.
 * Creating repositories for child entities would weaken aggregate boundaries and make it easier to bypass domain rules.
 
 ### Migrations

@@ -1,0 +1,311 @@
+.raid-events-page {
+    background:
+        radial-gradient(circle at 12% 0%, rgb(215 180 106 / 0.18), transparent 30%),
+        radial-gradient(circle at 88% 20%, rgb(63 199 235 / 0.1), transparent 28%),
+        linear-gradient(180deg, #111827 0%, #07111f 44%, #050914 100%);
+    color: #e5e7eb;
+    display: grid;
+    gap: 1.35rem;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.event-action {
+    align-items: center;
+    background: #d7b46a;
+    border: 1px solid #f0d58a;
+    border-radius: 6px;
+    color: #111827;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+}
+
+.event-action:hover {
+    background: #f0d58a;
+}
+
+.event-action--secondary {
+    background: rgb(15 23 42 / 0.84);
+    border-color: rgb(148 163 184 / 0.32);
+    color: #e5e7eb;
+}
+
+.event-action--secondary:hover {
+    background: rgb(30 41 59 / 0.96);
+}
+
+.event-action:focus,
+.event-list-item:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.16);
+    outline: none;
+}
+
+.event-summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.event-management-grid {
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.5fr);
+}
+
+.event-management-sidebar {
+    display: grid;
+    gap: 1.1rem;
+}
+
+.event-create-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.event-create-form__grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.event-form-field {
+    color: #a8b3c7;
+    display: grid;
+    font-size: 0.78rem;
+    font-weight: 900;
+    gap: 0.4rem;
+    text-transform: uppercase;
+}
+
+.event-form-field--wide {
+    grid-column: 1 / -1;
+}
+
+.event-form-field input,
+.event-form-field select,
+.event-form-field textarea {
+    background: rgb(2 6 23 / 0.62);
+    border: 1px solid rgb(148 163 184 / 0.2);
+    border-radius: 7px;
+    color: #f8fafc;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.35;
+    min-height: 2.55rem;
+    padding: 0.65rem 0.75rem;
+    text-transform: none;
+}
+
+.event-form-field textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+}
+
+.event-form-field input:focus,
+.event-form-field select:focus,
+.event-form-field textarea:focus {
+    border-color: rgb(215 180 106 / 0.72);
+    box-shadow: 0 0 0 3px rgb(215 180 106 / 0.14);
+    outline: none;
+}
+
+.event-form-field input:disabled,
+.event-form-field select:disabled,
+.event-form-field textarea:disabled,
+.event-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.event-create-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.event-status-message {
+    border: 1px solid rgb(148 163 184 / 0.18);
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.45;
+    padding: 0.75rem 0.85rem;
+}
+
+.event-status-message--success {
+    background: rgb(34 197 94 / 0.12);
+    border-color: rgb(34 197 94 / 0.28);
+    color: #bbf7d0;
+}
+
+.event-status-message--error {
+    background: rgb(248 113 113 / 0.12);
+    border-color: rgb(248 113 113 / 0.32);
+    color: #fecaca;
+}
+
+.event-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.event-list-item {
+    background: rgb(2 6 23 / 0.52);
+    border: 1px solid rgb(148 163 184 / 0.16);
+    border-radius: 8px;
+    color: #e5e7eb;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: 0.6rem;
+    padding: 0.9rem;
+    text-align: left;
+    width: 100%;
+}
+
+.event-list-item:hover,
+.event-list-item--selected {
+    background: rgb(30 41 59 / 0.64);
+    border-color: rgb(215 180 106 / 0.42);
+}
+
+.event-list-item__title {
+    color: #f8fafc;
+    font-weight: 900;
+}
+
+.event-list-item__time {
+    color: #a8b3c7;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.event-list-item__context {
+    align-items: center;
+    color: #8390a3;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    font-weight: 800;
+    gap: 0.5rem;
+}
+
+.event-difficulty {
+    align-items: center;
+    background: rgb(215 180 106 / 0.12);
+    border: 1px solid rgb(215 180 106 / 0.28);
+    border-radius: 999px;
+    color: #fde68a;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 900;
+    justify-content: center;
+    line-height: 1;
+    min-height: 1.7rem;
+    padding: 0.4rem 0.6rem;
+    width: fit-content;
+}
+
+.event-difficulty--large {
+    font-size: 0.86rem;
+    min-height: 2rem;
+    padding-inline: 0.75rem;
+}
+
+.event-detail-header {
+    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.event-detail-header h2 {
+    color: #f8fafc;
+    font-size: 1.55rem;
+    margin: 0.65rem 0 0.35rem;
+}
+
+.event-detail-header p {
+    color: #a8b3c7;
+    margin: 0;
+}
+
+.event-detail-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.event-detail-card,
+.event-notes-panel {
+    background: rgb(2 6 23 / 0.38);
+    border: 1px solid rgb(148 163 184 / 0.14);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.95rem;
+}
+
+.event-detail-card span {
+    color: #8390a3;
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.event-detail-card strong {
+    color: #f8fafc;
+    font-size: 1rem;
+}
+
+.event-detail-card small {
+    color: #a8b3c7;
+    font-size: 0.82rem;
+}
+
+.event-notes-panel {
+    margin-top: 1rem;
+}
+
+.event-notes-panel h3 {
+    color: #f8fafc;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.event-notes-panel p {
+    color: #cbd5e1;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.muted {
+    color: #8390a3;
+}
+
+@media (max-width: 1080px) {
+    .event-management-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .raid-events-page {
+        padding: 1rem;
+    }
+
+    .event-create-form__grid {
+        grid-template-columns: 1fr;
+    }
+}
