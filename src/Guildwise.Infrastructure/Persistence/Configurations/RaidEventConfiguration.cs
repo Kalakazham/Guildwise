@@ -66,6 +66,14 @@ public sealed class RaidEventConfiguration : IEntityTypeConfiguration<RaidEvent>
             .HasForeignKey(raidEvent => raidEvent.RaidTeamId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasMany(raidEvent => raidEvent.Signups)
+            .WithOne()
+            .HasForeignKey(signup => signup.RaidEventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(raidEvent => raidEvent.Signups)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasIndex(raidEvent => raidEvent.GuildId);
 
         builder.HasIndex(raidEvent => raidEvent.RaidTeamId);

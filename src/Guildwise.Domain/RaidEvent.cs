@@ -2,6 +2,8 @@ namespace Guildwise.Domain;
 
 public sealed class RaidEvent
 {
+    private readonly List<RaidEventSignup> _signups = new();
+
     public Guid Id { get; } = Guid.NewGuid();
 
     public Guid GuildId { get; private set; }
@@ -21,6 +23,8 @@ public sealed class RaidEvent
     public string Notes { get; private set; } = string.Empty;
 
     public RaidEventStatus Status { get; private set; }
+
+    public IReadOnlyCollection<RaidEventSignup> Signups => _signups.AsReadOnly();
 
     private RaidEvent(
         Guid guildId,
@@ -83,6 +87,32 @@ public sealed class RaidEvent
         }
 
         Status = RaidEventStatus.Cancelled;
+    }
+
+    public RaidEventSignup SetSignup(Guid playerId, RaidEventSignupStatus status)
+    {
+        if (Status == RaidEventStatus.Cancelled)
+        {
+            throw new InvalidOperationException("Cancelled raid events cannot accept signup changes.");
+        }
+
+        if (playerId == Guid.Empty)
+        {
+            throw new ArgumentException("playerId is required.", nameof(playerId));
+        }
+
+        DomainGuard.RequiredEnum(status, nameof(status));
+
+        var existing = _signups.FirstOrDefault(signup => signup.PlayerId == playerId);
+        if (existing is not null)
+        {
+            existing.UpdateStatus(status);
+            return existing;
+        }
+
+        var signup = new RaidEventSignup(Id, playerId, status);
+        _signups.Add(signup);
+        return signup;
     }
 
     private void ApplyDetails(
