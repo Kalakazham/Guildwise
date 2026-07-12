@@ -1,0 +1,252 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Domain
+
+@if (Event is not null)
+{
+    <form class="event-edit-form" @onsubmit="SubmitAsync" @onsubmit:preventDefault>
+        <div class="event-create-form__grid">
+            <label class="event-form-field event-form-field--wide">
+                Title
+                <input
+                    @bind="title"
+                    disabled="@inProgress"
+                    placeholder="Weekly progression raid" />
+            </label>
+
+            <label class="event-form-field event-form-field--wide">
+                Raid team
+                <select @bind="raidTeamId" disabled="@inProgress">
+                    @foreach (var option in RaidTeamOptions)
+                    {
+                        <option value="@option.RaidTeamId.ToString()">@RaidEventUiText.FormatRaidTeamOption(option)</option>
+                    }
+                </select>
+            </label>
+
+            <label class="event-form-field">
+                Start date/time
+                <input
+                    type="datetime-local"
+                    value="@startDateTime"
+                    @oninput="OnStartDateTimeChanged"
+                    disabled="@inProgress" />
+            </label>
+
+            <label class="event-form-field">
+                End date/time
+                <input
+                    type="datetime-local"
+                    value="@endDateTime"
+                    @oninput="OnEndDateTimeChanged"
+                    disabled="@inProgress" />
+            </label>
+
+            <label class="event-form-field">
+                Instance
+                <input
+                    @bind="instanceName"
+                    disabled="@inProgress"
+                    placeholder="Manaforge Omega" />
+            </label>
+
+            <label class="event-form-field">
+                Difficulty
+                <select @bind="difficulty" disabled="@inProgress">
+                    @foreach (var option in RaidDifficultyOptions)
+                    {
+                        <option value="@option">@RosterDisplayText.RaidDifficulty(option)</option>
+                    }
+                </select>
+            </label>
+
+            <label class="event-form-field event-form-field--wide">
+                Notes
+                <textarea
+                    @bind="notes"
+                    disabled="@inProgress"
+                    rows="3"
+                    placeholder="Optional planning notes"></textarea>
+            </label>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="event-status-message event-status-message--@messageStatus" role="status">
+                @message
+            </div>
+        }
+
+        <div class="event-create-form__actions">
+            <button type="submit" class="event-action" disabled="@inProgress">
+                @(inProgress ? "Saving..." : "Save changes")
+            </button>
+            <button type="button" class="event-action event-action--secondary" disabled="@inProgress" @onclick="DiscardAsync">
+                Discard changes
+            </button>
+        </div>
+    </form>
+}
+
+@code {
+    private static readonly IReadOnlyList<RaidDifficulty> RaidDifficultyOptions =
+    [
+        RaidDifficulty.Normal,
+        RaidDifficulty.Heroic,
+        RaidDifficulty.Mythic
+    ];
+
+    private Guid? loadedEventId;
+    private bool inProgress;
+    private string? message;
+    private string messageStatus = "success";
+    private string title = string.Empty;
+    private string raidTeamId = string.Empty;
+    private string startDateTime = string.Empty;
+    private string endDateTime = string.Empty;
+    private string instanceName = string.Empty;
+    private RaidDifficulty difficulty = RaidDifficulty.Normal;
+    private string notes = string.Empty;
+
+    [Parameter]
+    public RaidEventDto? Event { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<RaidTeamOption> RaidTeamOptions { get; set; } = [];
+
+    [Parameter]
+    public Func<RaidEventFormSubmission, Task<RaidEventActionResult>>? OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnDiscard { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Event is null)
+        {
+            loadedEventId = null;
+            return;
+        }
+
+        if (loadedEventId == Event.Id)
+        {
+            return;
+        }
+
+        loadedEventId = Event.Id;
+        title = Event.Title;
+        raidTeamId = Event.RaidTeamId.ToString();
+        startDateTime = RaidEventUiText.FormatDateTimeLocalValue(Event.StartTime);
+        endDateTime = Event.EndTime.HasValue ? RaidEventUiText.FormatDateTimeLocalValue(Event.EndTime.Value) : string.Empty;
+        instanceName = Event.InstanceName;
+        difficulty = Event.Difficulty;
+        notes = Event.Notes;
+        message = null;
+        messageStatus = "success";
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (inProgress)
+        {
+            return;
+        }
+
+        if (OnSubmit is null)
+        {
+            ShowFailure("Update handler is unavailable.");
+            return;
+        }
+
+        if (!TryBuildSubmission(out var submission))
+        {
+            return;
+        }
+
+        inProgress = true;
+        message = null;
+
+        try
+        {
+            var result = await OnSubmit(submission);
+            message = result.Message;
+            messageStatus = result.MessageStatus;
+        }
+        finally
+        {
+            inProgress = false;
+        }
+    }
+
+    private bool TryBuildSubmission(out RaidEventFormSubmission submission)
+    {
+        submission = default!;
+
+        if (!Guid.TryParse(raidTeamId, out var parsedRaidTeamId))
+        {
+            ShowFailure("Validation: Select a raid team before updating the raid event.");
+            return false;
+        }
+
+        var option = RaidTeamOptions.FirstOrDefault(candidate => candidate.RaidTeamId == parsedRaidTeamId);
+        if (option is null)
+        {
+            ShowFailure("Not found: Selected raid team context was not found.");
+            return false;
+        }
+
+        if (!RaidEventUiText.TryParseLocalDateTime(startDateTime, out var startTime))
+        {
+            ShowFailure("Validation: Start date and time must be set with a valid date and time.");
+            return false;
+        }
+
+        DateTimeOffset? endTime = null;
+        if (!string.IsNullOrWhiteSpace(endDateTime))
+        {
+            if (!RaidEventUiText.TryParseLocalDateTime(endDateTime, out var parsedEndTime))
+            {
+                ShowFailure("Validation: End date and time must be a valid date and time.");
+                return false;
+            }
+
+            endTime = parsedEndTime;
+        }
+
+        submission = new RaidEventFormSubmission(
+            option.GuildId,
+            option.RaidTeamId,
+            title,
+            startTime,
+            endTime,
+            instanceName,
+            difficulty,
+            notes);
+
+        return true;
+    }
+
+    private async Task DiscardAsync()
+    {
+        if (OnDiscard.HasDelegate)
+        {
+            await OnDiscard.InvokeAsync();
+        }
+    }
+
+    private void OnStartDateTimeChanged(ChangeEventArgs args)
+    {
+        startDateTime = RaidEventUiText.NormalizeDateTimeLocalInput(args.Value?.ToString());
+    }
+
+    private void OnEndDateTimeChanged(ChangeEventArgs args)
+    {
+        endDateTime = RaidEventUiText.NormalizeDateTimeLocalInput(args.Value?.ToString());
+    }
+
+    private void ShowFailure(string failure)
+    {
+        message = failure;
+        messageStatus = "error";
+    }
+}

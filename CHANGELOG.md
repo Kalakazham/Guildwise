@@ -22,6 +22,8 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Changed
 
+- Refactored the raid events page into focused Web components without changing behavior.
+
 ### Fixed
 
 ## [0.4.0] - 2026-07-11

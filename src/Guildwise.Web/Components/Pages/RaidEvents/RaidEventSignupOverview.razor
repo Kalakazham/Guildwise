@@ -1,0 +1,148 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.Guilds
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Domain
+
+<div class="event-signup-panel__header">
+    <div>
+        <h3>Signup Overview</h3>
+        <p>Stored signup responses for this raid event.</p>
+    </div>
+    @if (Event?.Status == RaidEventStatus.Cancelled)
+    {
+        <span class="event-signup-note">Cancelled events are not normally signup-capable.</span>
+    }
+</div>
+
+@if (Loading)
+{
+    <LoadingState Title="Loading signups" Message="Collecting stored signup responses for this event." />
+}
+else if (!string.IsNullOrWhiteSpace(LoadFailure))
+{
+    <EmptyState
+        Title="Signups could not be loaded."
+        Message="@LoadFailure">
+        <Actions>
+            @if (OnRetry.HasDelegate)
+            {
+                <button type="button" class="event-action" @onclick="() => OnRetry.InvokeAsync(Event?.Id)">Try again</button>
+            }
+        </Actions>
+    </EmptyState>
+}
+else if (Event is null)
+{
+    <EmptyState
+        Title="No raid event selected."
+        Message="Choose a raid event to inspect signup responses." />
+}
+else
+{
+    <div class="event-signup-summary-grid" aria-label="Signup summary">
+        <div class="event-signup-summary-card event-signup-summary-card--signed">
+            <span>Signed</span>
+            <strong>@GetSignupStatusCount(RaidEventSignupStatus.Signed)</strong>
+        </div>
+        <div class="event-signup-summary-card event-signup-summary-card--tentative">
+            <span>Tentative</span>
+            <strong>@GetSignupStatusCount(RaidEventSignupStatus.Tentative)</strong>
+        </div>
+        <div class="event-signup-summary-card event-signup-summary-card--declined">
+            <span>Declined</span>
+            <strong>@GetSignupStatusCount(RaidEventSignupStatus.Declined)</strong>
+        </div>
+        <div class="event-signup-summary-card">
+            <span>Missing response</span>
+            <strong>@FormatOptionalCount(GetMissingResponseCount())</strong>
+        </div>
+    </div>
+
+    <div class="event-signup-composition" aria-label="Signup role composition">
+        <span>Role Composition</span>
+        <strong>Tanks @GetSignupRoleCount(CharacterRole.Tank)</strong>
+        <strong>Healers @GetSignupRoleCount(CharacterRole.Healer)</strong>
+        <strong>DPS @GetSignupRoleCount(CharacterRole.Damage)</strong>
+    </div>
+
+    @if (Signups.Count == 0)
+    {
+        <EmptyState
+            Title="No stored signups yet."
+            Message="No guild member has a saved signup response for this event yet." />
+    }
+    else
+    {
+        <div class="event-signup-list" role="list" aria-label="Stored signups">
+            @foreach (var signup in Signups.OrderBy(signup => signup.PlayerDisplayName, StringComparer.OrdinalIgnoreCase).ThenBy(signup => signup.PlayerId))
+            {
+                <div class="event-signup-row" role="listitem">
+                    <div class="event-signup-row__identity">
+                        <strong>@signup.PlayerDisplayName</strong>
+                        <span>@(signup.HasMainCharacter ? signup.MainCharacterName : "No main character")</span>
+                    </div>
+                    <div class="event-signup-row__badges">
+                        <CharacterClassBadge Value="signup.CharacterClass" />
+                        <CharacterRoleBadge Value="signup.Role" />
+                        <GuildRankBadge Value="signup.GuildRank" />
+                        @if (signup.AdditionalRoles.Count == 0)
+                        {
+                            <span class="event-signup-muted">No additional roles</span>
+                        }
+                        else
+                        {
+                            @foreach (var role in signup.AdditionalRoles)
+                            {
+                                <GuildRoleBadge Value="role" />
+                            }
+                        }
+                    </div>
+                    <span class="@RaidEventUiText.GetSignupStatusClass(signup.Status)">@RaidEventUiText.FormatSignupStatus(signup.Status)</span>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public RaidEventDto? Event { get; set; }
+
+    [Parameter]
+    public GuildDto? Guild { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<RaidEventSignupDto> Signups { get; set; } = [];
+
+    [Parameter]
+    public bool Loading { get; set; }
+
+    [Parameter]
+    public string? LoadFailure { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> OnRetry { get; set; }
+
+    private int GetSignupStatusCount(RaidEventSignupStatus status)
+        => Signups.Count(signup => signup.Status == status);
+
+    private int GetSignupRoleCount(CharacterRole role)
+        => Signups.Count(signup => signup.Role == role);
+
+    private int? GetMissingResponseCount()
+    {
+        if (Guild is null)
+        {
+            return null;
+        }
+
+        var signupPlayerIds = Signups
+            .Select(signup => signup.PlayerId)
+            .ToHashSet();
+
+        return Guild.Members.Count(member => !signupPlayerIds.Contains(member.PlayerId));
+    }
+
+    private static string FormatOptionalCount(int? value)
+        => value.HasValue ? value.Value.ToString() : "Unknown";
+}
