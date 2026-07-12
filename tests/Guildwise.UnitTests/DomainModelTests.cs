@@ -539,6 +539,7 @@ public sealed class DomainModelTests
         Assert.Equal(endTime, raidEvent.EndTime);
         Assert.Equal("Liberation of Undermine", raidEvent.InstanceName);
         Assert.Equal(RaidDifficulty.Heroic, raidEvent.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, raidEvent.Status);
         Assert.Equal("Bring flasks.", raidEvent.Notes);
     }
 
@@ -563,6 +564,109 @@ public sealed class DomainModelTests
         Assert.NotNull(raidEvent.EndTime);
         Assert.Equal(TimeSpan.Zero, raidEvent.EndTime.Value.Offset);
         Assert.Equal(endTime.ToUniversalTime(), raidEvent.EndTime.Value);
+    }
+
+    [Fact]
+    public void RaidEvent_UpdateDetails_Updates_Event_Details()
+    {
+        var raidEvent = RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
+        var newGuildId = Guid.NewGuid();
+        var newRaidTeamId = Guid.NewGuid();
+        var newStartTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
+        var newEndTime = newStartTime.AddHours(3);
+
+        raidEvent.UpdateDetails(
+            newGuildId,
+            newRaidTeamId,
+            " Manaforge Omega ",
+            newStartTime,
+            newEndTime,
+            " Manaforge Omega ",
+            RaidDifficulty.Mythic,
+            "  Bring cauldrons. ");
+
+        Assert.Equal(newGuildId, raidEvent.GuildId);
+        Assert.Equal(newRaidTeamId, raidEvent.RaidTeamId);
+        Assert.Equal("Manaforge Omega", raidEvent.Title);
+        Assert.Equal(TimeSpan.Zero, raidEvent.StartTime.Offset);
+        Assert.Equal(newStartTime.ToUniversalTime(), raidEvent.StartTime);
+        Assert.NotNull(raidEvent.EndTime);
+        Assert.Equal(TimeSpan.Zero, raidEvent.EndTime.Value.Offset);
+        Assert.Equal(newEndTime.ToUniversalTime(), raidEvent.EndTime.Value);
+        Assert.Equal("Manaforge Omega", raidEvent.InstanceName);
+        Assert.Equal(RaidDifficulty.Mythic, raidEvent.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, raidEvent.Status);
+        Assert.Equal("Bring cauldrons.", raidEvent.Notes);
+    }
+
+    [Fact]
+    public void RaidEvent_UpdateDetails_Rejects_Cancelled_Event()
+    {
+        var raidEvent = RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
+        raidEvent.Cancel();
+
+        Assert.Throws<InvalidOperationException>(() => raidEvent.UpdateDetails(
+            raidEvent.GuildId,
+            raidEvent.RaidTeamId,
+            "Updated",
+            DateTimeOffset.UtcNow.AddDays(2),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+    }
+
+    [Fact]
+    public void RaidEvent_Cancel_Sets_Status_To_Cancelled()
+    {
+        var raidEvent = RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
+
+        raidEvent.Cancel();
+
+        Assert.Equal(RaidEventStatus.Cancelled, raidEvent.Status);
+    }
+
+    [Fact]
+    public void RaidEvent_Cancel_When_Already_Cancelled_Is_Idempotent()
+    {
+        var raidEvent = RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
+
+        raidEvent.Cancel();
+        raidEvent.Cancel();
+
+        Assert.Equal(RaidEventStatus.Cancelled, raidEvent.Status);
     }
 
     [Fact]

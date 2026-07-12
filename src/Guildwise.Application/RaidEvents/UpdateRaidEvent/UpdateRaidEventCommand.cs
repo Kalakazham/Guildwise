@@ -1,9 +1,9 @@
 using Guildwise.Domain;
 
-namespace Guildwise.Application.Contracts.RaidEvents;
+namespace Guildwise.Application.RaidEvents.UpdateRaidEvent;
 
-public sealed record RaidEventDto(
-    Guid Id,
+public sealed record UpdateRaidEventCommand(
+    Guid RaidEventId,
     Guid GuildId,
     Guid RaidTeamId,
     string Title,
@@ -11,5 +11,4 @@ public sealed record RaidEventDto(
     DateTimeOffset? EndTime,
     string InstanceName,
     RaidDifficulty Difficulty,
-    RaidEventStatus Status,
-    string Notes);
+    string? Notes);

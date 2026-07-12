@@ -277,9 +277,23 @@ public sealed class EfRepositoryTests : IAsyncLifetime
         AssertDateTimeOffsetCloseTo(endTime.ToUniversalTime(), loaded.EndTime.Value);
         Assert.Equal("Nerubar Palace", loaded.InstanceName);
         Assert.Equal(RaidDifficulty.Heroic, loaded.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, loaded.Status);
         Assert.Equal("Bring flasks.", loaded.Notes);
         Assert.Equal(raidEvent.Id, Assert.Single(guildEvents).Id);
         Assert.Equal(raidEvent.Id, Assert.Single(raidTeamEvents).Id);
+
+        using (var updateContext = _fixture.CreateDbContext())
+        {
+            var eventToCancel = await new EfRaidEventRepository(updateContext).GetByIdAsync(raidEvent.Id);
+            Assert.NotNull(eventToCancel);
+            eventToCancel.Cancel();
+            await new EfRaidEventRepository(updateContext).SaveChangesAsync();
+        }
+
+        using var statusAssertContext = _fixture.CreateDbContext();
+        var cancelled = await new EfRaidEventRepository(statusAssertContext).GetByIdAsync(raidEvent.Id);
+        Assert.NotNull(cancelled);
+        Assert.Equal(RaidEventStatus.Cancelled, cancelled.Status);
     }
 
     private static string UniqueName(string prefix)

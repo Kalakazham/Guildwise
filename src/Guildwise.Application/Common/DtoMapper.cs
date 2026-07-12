@@ -54,6 +54,7 @@ internal static class DtoMapper
             raidEvent.EndTime,
             raidEvent.InstanceName,
             raidEvent.Difficulty,
+            raidEvent.Status,
             raidEvent.Notes);
 
     internal static GuildMemberDto ToDto(GuildMember member)
