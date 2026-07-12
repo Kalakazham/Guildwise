@@ -4,7 +4,9 @@ using Guildwise.Application.Characters.SetMainCharacter;
 using Guildwise.Application.Common.Results;
 using Guildwise.Application.GuildMembers.AddPlayerToGuild;
 using Guildwise.Application.Players.DeletePlayer;
+using Guildwise.Application.RaidEvents.CancelRaidEvent;
 using Guildwise.Application.RaidEvents.CreateRaidEvent;
+using Guildwise.Application.RaidEvents.UpdateRaidEvent;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
 using Guildwise.Domain;
@@ -178,6 +180,115 @@ public sealed class EfApplicationPersistenceTests : IAsyncLifetime
         AssertDateTimeOffsetCloseTo(startTime.ToUniversalTime(), raidEvent.StartTime);
         Assert.Equal("Nerubar Palace", raidEvent.InstanceName);
         Assert.Equal(RaidDifficulty.Normal, raidEvent.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, raidEvent.Status);
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_Persists_Event_Changes()
+    {
+        var guild = await AddGuildAsync();
+        var raidTeamName = UniqueName("RaidTeam");
+        Guid raidTeamId;
+
+        using (var raidTeamContext = _fixture.CreateDbContext())
+        {
+            var raidTeamResult = await new CreateRaidTeamHandler(new EfGuildRepository(raidTeamContext))
+                .HandleAsync(new CreateRaidTeamCommand(guild.Id, raidTeamName));
+            raidTeamId = AssertSuccess(raidTeamResult).Id;
+        }
+
+        Guid raidEventId;
+        using (var createContext = _fixture.CreateDbContext())
+        {
+            var createHandler = new CreateRaidEventHandler(
+                new EfGuildRepository(createContext),
+                new EfRaidEventRepository(createContext));
+
+            raidEventId = AssertSuccess(await createHandler.HandleAsync(new CreateRaidEventCommand(
+                guild.Id,
+                raidTeamId,
+                "Raid Night",
+                DateTimeOffset.UtcNow.AddDays(1),
+                null,
+                "Nerubar Palace",
+                RaidDifficulty.Normal,
+                null))).Id;
+        }
+
+        var updatedStartTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
+        using (var updateContext = _fixture.CreateDbContext())
+        {
+            var updateHandler = new UpdateRaidEventHandler(
+                new EfGuildRepository(updateContext),
+                new EfRaidEventRepository(updateContext));
+
+            AssertSuccess(await updateHandler.HandleAsync(new UpdateRaidEventCommand(
+                raidEventId,
+                guild.Id,
+                raidTeamId,
+                "Updated Raid",
+                updatedStartTime,
+                null,
+                "Manaforge Omega",
+                RaidDifficulty.Heroic,
+                "Updated notes")));
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var raidEvent = await new EfRaidEventRepository(assertContext).GetByIdAsync(raidEventId);
+        Assert.NotNull(raidEvent);
+        Assert.Equal("Updated Raid", raidEvent.Title);
+        Assert.Equal("Manaforge Omega", raidEvent.InstanceName);
+        Assert.Equal(RaidDifficulty.Heroic, raidEvent.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, raidEvent.Status);
+        Assert.Equal("Updated notes", raidEvent.Notes);
+        Assert.Equal(TimeSpan.Zero, raidEvent.StartTime.Offset);
+        AssertDateTimeOffsetCloseTo(updatedStartTime.ToUniversalTime(), raidEvent.StartTime);
+    }
+
+    [Fact]
+    public async Task CancelRaidEvent_Persists_Cancelled_Status()
+    {
+        var guild = await AddGuildAsync();
+        Guid raidTeamId;
+
+        using (var raidTeamContext = _fixture.CreateDbContext())
+        {
+            var raidTeamResult = await new CreateRaidTeamHandler(new EfGuildRepository(raidTeamContext))
+                .HandleAsync(new CreateRaidTeamCommand(guild.Id, UniqueName("RaidTeam")));
+            raidTeamId = AssertSuccess(raidTeamResult).Id;
+        }
+
+        Guid raidEventId;
+        using (var createContext = _fixture.CreateDbContext())
+        {
+            var createHandler = new CreateRaidEventHandler(
+                new EfGuildRepository(createContext),
+                new EfRaidEventRepository(createContext));
+
+            raidEventId = AssertSuccess(await createHandler.HandleAsync(new CreateRaidEventCommand(
+                guild.Id,
+                raidTeamId,
+                "Raid Night",
+                DateTimeOffset.UtcNow.AddDays(1),
+                null,
+                "Nerubar Palace",
+                RaidDifficulty.Normal,
+                null))).Id;
+        }
+
+        using (var cancelContext = _fixture.CreateDbContext())
+        {
+            var cancelHandler = new CancelRaidEventHandler(new EfRaidEventRepository(cancelContext));
+
+            var cancelled = AssertSuccess(await cancelHandler.HandleAsync(new CancelRaidEventCommand(raidEventId)));
+            Assert.Equal(RaidEventStatus.Cancelled, cancelled.Status);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var raidEvent = await new EfRaidEventRepository(assertContext).GetByIdAsync(raidEventId);
+        Assert.NotNull(raidEvent);
+        Assert.Equal(RaidEventStatus.Cancelled, raidEvent.Status);
     }
 
     [Fact]

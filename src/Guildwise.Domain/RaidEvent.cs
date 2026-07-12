@@ -4,23 +4,88 @@ public sealed class RaidEvent
 {
     public Guid Id { get; } = Guid.NewGuid();
 
-    public Guid GuildId { get; }
+    public Guid GuildId { get; private set; }
 
-    public Guid RaidTeamId { get; }
+    public Guid RaidTeamId { get; private set; }
 
-    public string Title { get; private set; }
+    public string Title { get; private set; } = string.Empty;
 
     public DateTimeOffset StartTime { get; private set; }
 
     public DateTimeOffset? EndTime { get; private set; }
 
-    public string InstanceName { get; private set; }
+    public string InstanceName { get; private set; } = string.Empty;
 
     public RaidDifficulty Difficulty { get; private set; }
 
-    public string Notes { get; private set; }
+    public string Notes { get; private set; } = string.Empty;
+
+    public RaidEventStatus Status { get; private set; }
 
     private RaidEvent(
+        Guid guildId,
+        Guid raidTeamId,
+        string title,
+        DateTimeOffset startTime,
+        DateTimeOffset? endTime,
+        string instanceName,
+        RaidDifficulty difficulty,
+        string? notes,
+        RaidEventStatus status = RaidEventStatus.Scheduled)
+    {
+        ApplyDetails(guildId, raidTeamId, title, startTime, endTime, instanceName, difficulty, notes);
+        DomainGuard.RequiredEnum(status, nameof(status));
+        Status = status;
+    }
+
+    public static RaidEvent Create(
+        Guid guildId,
+        Guid raidTeamId,
+        string title,
+        DateTimeOffset startTime,
+        DateTimeOffset? endTime,
+        string instanceName,
+        RaidDifficulty difficulty,
+        string? notes)
+        => new(
+            guildId,
+            raidTeamId,
+            title,
+            startTime,
+            endTime,
+            instanceName,
+            difficulty,
+            notes);
+
+    public void UpdateDetails(
+        Guid guildId,
+        Guid raidTeamId,
+        string title,
+        DateTimeOffset startTime,
+        DateTimeOffset? endTime,
+        string instanceName,
+        RaidDifficulty difficulty,
+        string? notes)
+    {
+        if (Status == RaidEventStatus.Cancelled)
+        {
+            throw new InvalidOperationException("Cancelled raid events cannot be updated.");
+        }
+
+        ApplyDetails(guildId, raidTeamId, title, startTime, endTime, instanceName, difficulty, notes);
+    }
+
+    public void Cancel()
+    {
+        if (Status == RaidEventStatus.Cancelled)
+        {
+            return;
+        }
+
+        Status = RaidEventStatus.Cancelled;
+    }
+
+    private void ApplyDetails(
         Guid guildId,
         Guid raidTeamId,
         string title,
@@ -61,23 +126,4 @@ public sealed class RaidEvent
         Difficulty = difficulty;
         Notes = notes?.Trim() ?? string.Empty;
     }
-
-    public static RaidEvent Create(
-        Guid guildId,
-        Guid raidTeamId,
-        string title,
-        DateTimeOffset startTime,
-        DateTimeOffset? endTime,
-        string instanceName,
-        RaidDifficulty difficulty,
-        string? notes)
-        => new(
-            guildId,
-            raidTeamId,
-            title,
-            startTime,
-            endTime,
-            instanceName,
-            difficulty,
-            notes);
 }

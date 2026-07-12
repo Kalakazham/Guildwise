@@ -27,9 +27,11 @@ using Guildwise.Application.Players.DeletePlayer;
 using Guildwise.Application.Players.GetPlayer;
 using Guildwise.Application.Players.ListPlayers;
 using Guildwise.Application.Players.UpdatePlayer;
+using Guildwise.Application.RaidEvents.CancelRaidEvent;
 using Guildwise.Application.RaidEvents.CreateRaidEvent;
 using Guildwise.Application.RaidEvents.GetRaidEvent;
 using Guildwise.Application.RaidEvents.ListRaidEvents;
+using Guildwise.Application.RaidEvents.UpdateRaidEvent;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
 using Guildwise.Application.RaidTeams.DeleteRaidTeam;
@@ -1231,6 +1233,7 @@ public sealed class ApplicationUseCaseTests
         Assert.Equal(endTime.ToUniversalTime(), raidEvent.EndTime.Value);
         Assert.Equal("Liberation of Undermine", raidEvent.InstanceName);
         Assert.Equal(RaidDifficulty.Heroic, raidEvent.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, raidEvent.Status);
         Assert.Equal("Bring flasks.", raidEvent.Notes);
 
         var stored = await context.RaidEventRepository.GetByIdAsync(raidEvent.Id);
@@ -1238,6 +1241,7 @@ public sealed class ApplicationUseCaseTests
         Assert.Equal(raidEvent.Id, stored.Id);
         Assert.Equal(TimeSpan.Zero, stored.StartTime.Offset);
         Assert.Equal(startTime.ToUniversalTime(), stored.StartTime);
+        Assert.Equal(RaidEventStatus.Scheduled, stored.Status);
     }
 
     [Fact]
@@ -1350,6 +1354,7 @@ public sealed class ApplicationUseCaseTests
         Assert.NotNull(loaded);
         Assert.Equal(raidEvent.Id, loaded.Id);
         Assert.Equal("Raid Night", loaded.Title);
+        Assert.Equal(RaidEventStatus.Scheduled, loaded.Status);
     }
 
     [Fact]
@@ -1374,6 +1379,7 @@ public sealed class ApplicationUseCaseTests
         Assert.Equal(2, raidEvents.Count);
         Assert.Contains(raidEvents, raidEvent => raidEvent.Title == "First");
         Assert.Contains(raidEvents, raidEvent => raidEvent.Title == "Second");
+        Assert.All(raidEvents, raidEvent => Assert.Equal(RaidEventStatus.Scheduled, raidEvent.Status));
     }
 
     [Fact]
@@ -1392,6 +1398,180 @@ public sealed class ApplicationUseCaseTests
         Assert.Single(byRaidTeam);
         Assert.Equal(second.Id, byRaidTeam.Single().Id);
         Assert.Empty(byGuildAndRaidTeam);
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_With_Valid_Event_Returns_Updated_Dto()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+        var newGuild = AssertSuccess(await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Updated Guild", "EU", "Silvermoon")));
+        var newRaidTeam = AssertSuccess(await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(newGuild.Id, "Team Two")));
+        var startTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
+        var endTime = startTime.AddHours(3);
+
+        var updated = AssertSuccess(await context.UpdateRaidEventHandler.HandleAsync(new UpdateRaidEventCommand(
+            raidEvent.Id,
+            newGuild.Id,
+            newRaidTeam.Id,
+            " Manaforge Omega ",
+            startTime,
+            endTime,
+            " Manaforge Omega ",
+            RaidDifficulty.Mythic,
+            "  Bring cauldrons. ")));
+
+        Assert.Equal(raidEvent.Id, updated.Id);
+        Assert.Equal(newGuild.Id, updated.GuildId);
+        Assert.Equal(newRaidTeam.Id, updated.RaidTeamId);
+        Assert.Equal("Manaforge Omega", updated.Title);
+        Assert.Equal(TimeSpan.Zero, updated.StartTime.Offset);
+        Assert.Equal(startTime.ToUniversalTime(), updated.StartTime);
+        Assert.NotNull(updated.EndTime);
+        Assert.Equal(TimeSpan.Zero, updated.EndTime.Value.Offset);
+        Assert.Equal(endTime.ToUniversalTime(), updated.EndTime.Value);
+        Assert.Equal("Manaforge Omega", updated.InstanceName);
+        Assert.Equal(RaidDifficulty.Mythic, updated.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, updated.Status);
+        Assert.Equal("Bring cauldrons.", updated.Notes);
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_When_Event_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+
+        var result = await context.UpdateRaidEventHandler.HandleAsync(new UpdateRaidEventCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+
+        AssertFailure(result, FailureType.NotFound, "RaidEvent");
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_When_Guild_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+
+        var result = await context.UpdateRaidEventHandler.HandleAsync(new UpdateRaidEventCommand(
+            raidEvent.Id,
+            Guid.NewGuid(),
+            raidEvent.RaidTeamId,
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+
+        AssertFailure(result, FailureType.NotFound, "Guild");
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_When_RaidTeam_Is_Missing_Or_Wrong_Guild_Returns_NotFound()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+        var otherGuild = AssertSuccess(await context.CreateGuildHandler.HandleAsync(new CreateGuildCommand("Other", "EU", "Silvermoon")));
+        var otherRaidTeam = AssertSuccess(await context.CreateRaidTeamHandler.HandleAsync(new CreateRaidTeamCommand(otherGuild.Id, "Other Team")));
+
+        var result = await context.UpdateRaidEventHandler.HandleAsync(new UpdateRaidEventCommand(
+            raidEvent.Id,
+            raidEvent.GuildId,
+            otherRaidTeam.Id,
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+
+        AssertFailure(result, FailureType.NotFound, "RaidTeam");
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_When_Event_Is_Cancelled_Returns_BusinessRule()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+        AssertSuccess(await context.CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(raidEvent.Id)));
+
+        var result = await context.UpdateRaidEventHandler.HandleAsync(new UpdateRaidEventCommand(
+            raidEvent.Id,
+            raidEvent.GuildId,
+            raidEvent.RaidTeamId,
+            "Updated",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+
+        AssertFailure(result, FailureType.BusinessRule, "Cancelled");
+    }
+
+    [Fact]
+    public async Task UpdateRaidEvent_With_Invalid_TimeRange_Returns_Validation()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+
+        var result = await context.UpdateRaidEventHandler.HandleAsync(new UpdateRaidEventCommand(
+            raidEvent.Id,
+            raidEvent.GuildId,
+            raidEvent.RaidTeamId,
+            "Updated",
+            startTime,
+            startTime,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+
+        AssertFailure(result, FailureType.Validation, "after");
+    }
+
+    [Fact]
+    public async Task CancelRaidEvent_With_Valid_Event_Returns_Cancelled_Dto()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+
+        var cancelled = AssertSuccess(await context.CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(raidEvent.Id)));
+
+        Assert.Equal(raidEvent.Id, cancelled.Id);
+        Assert.Equal(RaidEventStatus.Cancelled, cancelled.Status);
+    }
+
+    [Fact]
+    public async Task CancelRaidEvent_When_Event_Is_Missing_Returns_NotFound()
+    {
+        var context = new TestContext();
+
+        var result = await context.CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(Guid.NewGuid()));
+
+        AssertFailure(result, FailureType.NotFound, "RaidEvent");
+    }
+
+    [Fact]
+    public async Task CancelRaidEvent_When_Already_Cancelled_Returns_Success()
+    {
+        var context = new TestContext();
+        var raidEvent = await context.CreateReadyRaidEventAsync("Team One", "Raid Night");
+        AssertSuccess(await context.CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(raidEvent.Id)));
+
+        var secondCancel = AssertSuccess(await context.CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(raidEvent.Id)));
+
+        Assert.Equal(raidEvent.Id, secondCancel.Id);
+        Assert.Equal(RaidEventStatus.Cancelled, secondCancel.Status);
     }
 
     private static T AssertSuccess<T>(Result<T> result)
@@ -1464,6 +1644,8 @@ public sealed class ApplicationUseCaseTests
             CreateRaidEventHandler = new CreateRaidEventHandler(GuildRepository, RaidEventRepository);
             GetRaidEventHandler = new GetRaidEventHandler(RaidEventRepository);
             ListRaidEventsHandler = new ListRaidEventsHandler(RaidEventRepository);
+            UpdateRaidEventHandler = new UpdateRaidEventHandler(GuildRepository, RaidEventRepository);
+            CancelRaidEventHandler = new CancelRaidEventHandler(RaidEventRepository);
 
             AddPlayerToGuildHandler = new AddPlayerToGuildHandler(GuildRepository, PlayerRepository);
             AddAdditionalRoleHandler = new AddAdditionalRoleToGuildMemberHandler(GuildRepository);
@@ -1512,6 +1694,8 @@ public sealed class ApplicationUseCaseTests
         public CreateRaidEventHandler CreateRaidEventHandler { get; }
         public GetRaidEventHandler GetRaidEventHandler { get; }
         public ListRaidEventsHandler ListRaidEventsHandler { get; }
+        public UpdateRaidEventHandler UpdateRaidEventHandler { get; }
+        public CancelRaidEventHandler CancelRaidEventHandler { get; }
 
         public AddPlayerToGuildHandler AddPlayerToGuildHandler { get; }
         public AddAdditionalRoleToGuildMemberHandler AddAdditionalRoleHandler { get; }

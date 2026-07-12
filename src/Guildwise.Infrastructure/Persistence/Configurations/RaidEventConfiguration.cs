@@ -45,6 +45,12 @@ public sealed class RaidEventConfiguration : IEntityTypeConfiguration<RaidEvent>
             .HasMaxLength(40)
             .IsRequired();
 
+        builder.Property(raidEvent => raidEvent.Status)
+            .HasColumnName("status")
+            .HasConversion<string>()
+            .HasMaxLength(40)
+            .IsRequired();
+
         builder.Property(raidEvent => raidEvent.Notes)
             .HasColumnName("notes")
             .HasMaxLength(2000)

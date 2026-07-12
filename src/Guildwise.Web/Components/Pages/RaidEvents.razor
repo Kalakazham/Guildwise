@@ -7,12 +7,16 @@
 @using Guildwise.Application.Contracts.RaidEvents
 @using Guildwise.Application.Contracts.RaidTeams
 @using Guildwise.Application.Guilds.ListGuilds
+@using Guildwise.Application.RaidEvents.CancelRaidEvent
 @using Guildwise.Application.RaidEvents.CreateRaidEvent
 @using Guildwise.Application.RaidEvents.ListRaidEvents
+@using Guildwise.Application.RaidEvents.UpdateRaidEvent
 @using Guildwise.Domain
+@inject CancelRaidEventHandler CancelRaidEventHandler
 @inject CreateRaidEventHandler CreateRaidEventHandler
 @inject ListGuildsHandler ListGuildsHandler
 @inject ListRaidEventsHandler ListRaidEventsHandler
+@inject UpdateRaidEventHandler UpdateRaidEventHandler
 
 <PageTitle>Raid Events</PageTitle>
 
@@ -287,7 +291,7 @@
 
                             <button
                                 type="button"
-                                class="event-list-item @(isSelected ? "event-list-item--selected" : string.Empty)"
+                                class="@GetEventListItemClass(raidEvent, isSelected)"
                                 @onclick="() => SelectEvent(raidEvent.Id)"
                                 aria-pressed="@isSelected">
                                 <span class="event-list-item__title">@raidEvent.Title</span>
@@ -296,7 +300,10 @@
                                     <RaidTeamBadge Name="@GetRaidTeamName(raidTeam)" />
                                     <span>@GetGuildContext(guild)</span>
                                 </span>
-                                <span class="event-difficulty">@RosterDisplayText.RaidDifficulty(raidEvent.Difficulty)</span>
+                                <span class="event-list-item__meta">
+                                    <span class="event-difficulty">@RosterDisplayText.RaidDifficulty(raidEvent.Difficulty)</span>
+                                    <span class="@GetEventStatusClass(raidEvent.Status)">@FormatEventStatus(raidEvent.Status)</span>
+                                </span>
                             </button>
                         }
                     </div>
@@ -321,48 +328,187 @@
                             <h2>@selectedEvent.Title</h2>
                             <p>@GetGuildContext(guild)</p>
                         </div>
-                        <span class="event-difficulty event-difficulty--large">@RosterDisplayText.RaidDifficulty(selectedEvent.Difficulty)</span>
+                        <div class="event-detail-header__meta">
+                            <span class="@GetEventStatusClass(selectedEvent.Status, large: true)">@FormatEventStatus(selectedEvent.Status)</span>
+                            <span class="event-difficulty event-difficulty--large">@RosterDisplayText.RaidDifficulty(selectedEvent.Difficulty)</span>
+                            @if (!isEditingSelectedEvent && selectedEvent.Status == RaidEventStatus.Scheduled)
+                            {
+                                <button type="button" class="event-action event-action--secondary" @onclick="() => StartEdit(selectedEvent)">
+                                    Edit
+                                </button>
+                                @if (!isConfirmingCancel)
+                                {
+                                    <button type="button" class="event-action event-action--danger" disabled="@cancelInProgress" @onclick="RequestCancel">
+                                        Cancel event
+                                    </button>
+                                }
+                            }
+                            else if (selectedEvent.Status == RaidEventStatus.Cancelled)
+                            {
+                                <span class="event-edit-hint">This event is already cancelled.</span>
+                            }
+                        </div>
                     </div>
 
-                    <div class="event-detail-grid">
-                        <section class="event-detail-card">
-                            <span>Raid team</span>
-                            <strong>@GetRaidTeamName(raidTeam)</strong>
-                        </section>
-                        <section class="event-detail-card">
-                            <span>Guild</span>
-                            <strong>@GetGuildName(guild)</strong>
-                            <small>@GetGuildRealm(guild)</small>
-                        </section>
-                        <section class="event-detail-card">
-                            <span>Start</span>
-                            <strong>@FormatDateTime(selectedEvent.StartTime)</strong>
-                        </section>
-                        <section class="event-detail-card">
-                            <span>End</span>
-                            <strong>@FormatOptionalDateTime(selectedEvent.EndTime)</strong>
-                        </section>
-                        <section class="event-detail-card">
-                            <span>Duration</span>
-                            <strong>@FormatDuration(selectedEvent)</strong>
-                        </section>
-                        <section class="event-detail-card">
-                            <span>Instance</span>
-                            <strong>@selectedEvent.InstanceName</strong>
-                        </section>
-                    </div>
+                    @if (isEditingSelectedEvent)
+                    {
+                        <form class="event-edit-form" @onsubmit="UpdateRaidEventAsync" @onsubmit:preventDefault>
+                            <div class="event-create-form__grid">
+                                <label class="event-form-field event-form-field--wide">
+                                    Title
+                                    <input
+                                        @bind="editTitle"
+                                        disabled="@editInProgress"
+                                        placeholder="Weekly progression raid" />
+                                </label>
 
-                    <section class="event-notes-panel" aria-label="Raid event notes">
-                        <h3>Notes</h3>
-                        @if (string.IsNullOrWhiteSpace(selectedEvent.Notes))
+                                <label class="event-form-field event-form-field--wide">
+                                    Raid team
+                                    <select @bind="editRaidTeamId" disabled="@editInProgress">
+                                        @foreach (var option in RaidTeamOptions)
+                                        {
+                                            <option value="@option.RaidTeamId.ToString()">@FormatRaidTeamOption(option)</option>
+                                        }
+                                    </select>
+                                </label>
+
+                                <label class="event-form-field">
+                                    Start date/time
+                                    <input
+                                        type="datetime-local"
+                                        value="@editStartDateTime"
+                                        @oninput="OnEditStartDateTimeChanged"
+                                        disabled="@editInProgress" />
+                                </label>
+
+                                <label class="event-form-field">
+                                    End date/time
+                                    <input
+                                        type="datetime-local"
+                                        value="@editEndDateTime"
+                                        @oninput="OnEditEndDateTimeChanged"
+                                        disabled="@editInProgress" />
+                                </label>
+
+                                <label class="event-form-field">
+                                    Instance
+                                    <input
+                                        @bind="editInstanceName"
+                                        disabled="@editInProgress"
+                                        placeholder="Manaforge Omega" />
+                                </label>
+
+                                <label class="event-form-field">
+                                    Difficulty
+                                    <select @bind="editDifficulty" disabled="@editInProgress">
+                                        @foreach (var difficulty in RaidDifficultyOptions)
+                                        {
+                                            <option value="@difficulty">@RosterDisplayText.RaidDifficulty(difficulty)</option>
+                                        }
+                                    </select>
+                                </label>
+
+                                <label class="event-form-field event-form-field--wide">
+                                    Notes
+                                    <textarea
+                                        @bind="editNotes"
+                                        disabled="@editInProgress"
+                                        rows="3"
+                                        placeholder="Optional planning notes"></textarea>
+                                </label>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(editMessage))
+                            {
+                                <div class="event-status-message event-status-message--@editStatus" role="status">
+                                    @editMessage
+                                </div>
+                            }
+
+                            <div class="event-create-form__actions">
+                                <button type="submit" class="event-action" disabled="@editInProgress">
+                                    @(editInProgress ? "Saving..." : "Save changes")
+                                </button>
+                                <button type="button" class="event-action event-action--secondary" disabled="@editInProgress" @onclick="DiscardEditChanges">
+                                    Discard changes
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrWhiteSpace(cancelMessage))
                         {
-                            <p class="muted">No notes for this raid event.</p>
+                            <div class="event-status-message event-status-message--@cancelStatus" role="status">
+                                @cancelMessage
+                            </div>
                         }
-                        else
+
+                        @if (selectedEvent.Status == RaidEventStatus.Scheduled && isConfirmingCancel)
                         {
-                            <p>@selectedEvent.Notes</p>
+                            <section class="event-cancel-confirm" aria-label="Confirm raid event cancellation">
+                                <div>
+                                    <strong>Cancel this raid event?</strong>
+                                    <p>The event will stay visible with cancelled status.</p>
+                                </div>
+                                <div class="event-cancel-confirm__actions">
+                                    <button type="button" class="event-action event-action--danger" disabled="@cancelInProgress" @onclick="CancelRaidEventAsync">
+                                        @(cancelInProgress ? "Cancelling..." : "Confirm cancellation")
+                                    </button>
+                                    <button type="button" class="event-action event-action--secondary" disabled="@cancelInProgress" @onclick="DismissCancelConfirmation">
+                                        Keep scheduled
+                                    </button>
+                                </div>
+                            </section>
                         }
-                    </section>
+
+                        @if (!string.IsNullOrWhiteSpace(editMessage))
+                        {
+                            <div class="event-status-message event-status-message--@editStatus" role="status">
+                                @editMessage
+                            </div>
+                        }
+
+                        <div class="event-detail-grid">
+                            <section class="event-detail-card">
+                                <span>Raid team</span>
+                                <strong>@GetRaidTeamName(raidTeam)</strong>
+                            </section>
+                            <section class="event-detail-card">
+                                <span>Guild</span>
+                                <strong>@GetGuildName(guild)</strong>
+                                <small>@GetGuildRealm(guild)</small>
+                            </section>
+                            <section class="event-detail-card">
+                                <span>Start</span>
+                                <strong>@FormatDateTime(selectedEvent.StartTime)</strong>
+                            </section>
+                            <section class="event-detail-card">
+                                <span>End</span>
+                                <strong>@FormatOptionalDateTime(selectedEvent.EndTime)</strong>
+                            </section>
+                            <section class="event-detail-card">
+                                <span>Duration</span>
+                                <strong>@FormatDuration(selectedEvent)</strong>
+                            </section>
+                            <section class="event-detail-card">
+                                <span>Instance</span>
+                                <strong>@selectedEvent.InstanceName</strong>
+                            </section>
+                        </div>
+
+                        <section class="event-notes-panel" aria-label="Raid event notes">
+                            <h3>Notes</h3>
+                            @if (string.IsNullOrWhiteSpace(selectedEvent.Notes))
+                            {
+                                <p class="muted">No notes for this raid event.</p>
+                            }
+                            else
+                            {
+                                <p>@selectedEvent.Notes</p>
+                            }
+                        </section>
+                    }
                 }
             </ContentPanel>
         </section>
@@ -377,6 +523,14 @@
     private bool createInProgress;
     private string? createMessage;
     private string createStatus = "success";
+    private bool editInProgress;
+    private bool isEditingSelectedEvent;
+    private string? editMessage;
+    private string editStatus = "success";
+    private bool cancelInProgress;
+    private bool isConfirmingCancel;
+    private string? cancelMessage;
+    private string cancelStatus = "success";
     private Guid? selectedRaidEventId;
     private string createTitle = string.Empty;
     private string createRaidTeamId = string.Empty;
@@ -385,6 +539,13 @@
     private string createInstanceName = string.Empty;
     private RaidDifficulty createDifficulty = RaidDifficulty.Normal;
     private string createNotes = string.Empty;
+    private string editTitle = string.Empty;
+    private string editRaidTeamId = string.Empty;
+    private string editStartDateTime = string.Empty;
+    private string editEndDateTime = string.Empty;
+    private string editInstanceName = string.Empty;
+    private RaidDifficulty editDifficulty = RaidDifficulty.Normal;
+    private string editNotes = string.Empty;
 
     private static readonly IReadOnlyList<RaidDifficulty> RaidDifficultyOptions =
     [
@@ -443,12 +604,15 @@
             raidEvents = await ListRaidEventsHandler.HandleAsync(new ListRaidEventsQuery());
             EnsureSelection();
             EnsureCreateRaidTeamSelection();
+            EnsureEditStateIsValid();
         }
         catch
         {
             guilds = [];
             raidEvents = [];
             selectedRaidEventId = null;
+            StopEdit(clearMessage: true);
+            ResetCancelState(clearMessage: true);
             loadFailure = "An unexpected technical failure occurred while loading raid events.";
         }
         finally
@@ -498,8 +662,90 @@
         }
     }
 
+    private async Task UpdateRaidEventAsync()
+    {
+        editMessage = null;
+
+        if (!TryCreateUpdateCommand(out var command))
+        {
+            return;
+        }
+
+        editInProgress = true;
+
+        try
+        {
+            var result = await UpdateRaidEventHandler.HandleAsync(command);
+            if (result.IsFailure)
+            {
+                ShowEditFailure(result.Failure!);
+                return;
+            }
+
+            var updatedEvent = result.Value ?? throw new InvalidOperationException("Successful update raid event result did not include a value.");
+            ShowEditSuccess($"Updated {updatedEvent.Title}.");
+            StopEdit(clearMessage: false);
+            await LoadRaidEventsAsync(updatedEvent.Id);
+        }
+        catch
+        {
+            ShowEditTechnicalFailure("An unexpected technical failure occurred while updating the raid event.");
+        }
+        finally
+        {
+            editInProgress = false;
+        }
+    }
+
+    private async Task CancelRaidEventAsync()
+    {
+        cancelMessage = null;
+
+        var selectedEvent = SelectedEvent;
+        if (selectedEvent is null)
+        {
+            ShowCancelFailure(new Failure(FailureType.NotFound, "Selected raid event was not found."));
+            isConfirmingCancel = false;
+            return;
+        }
+
+        cancelInProgress = true;
+
+        try
+        {
+            var result = await CancelRaidEventHandler.HandleAsync(new CancelRaidEventCommand(selectedEvent.Id));
+            if (result.IsFailure)
+            {
+                ShowCancelFailure(result.Failure!);
+                isConfirmingCancel = false;
+                return;
+            }
+
+            var cancelledEvent = result.Value ?? throw new InvalidOperationException("Successful cancel raid event result did not include a value.");
+            StopEdit(clearMessage: true);
+            isConfirmingCancel = false;
+            ShowCancelSuccess($"Cancelled {cancelledEvent.Title}.");
+            await LoadRaidEventsAsync(cancelledEvent.Id);
+        }
+        catch
+        {
+            ShowCancelTechnicalFailure("An unexpected technical failure occurred while cancelling the raid event.");
+            isConfirmingCancel = false;
+        }
+        finally
+        {
+            cancelInProgress = false;
+        }
+    }
+
     private void SelectEvent(Guid raidEventId)
     {
+        if (selectedRaidEventId != raidEventId)
+        {
+            StopEdit(clearMessage: true);
+            ResetCancelState(clearMessage: true);
+        }
+
         selectedRaidEventId = raidEventId;
     }
 
@@ -514,6 +760,8 @@
         if (selectedRaidEventId is null || raidEvents.All(raidEvent => raidEvent.Id != selectedRaidEventId.Value))
         {
             selectedRaidEventId = OrderedRaidEvents.First().Id;
+            StopEdit(clearMessage: true);
+            ResetCancelState(clearMessage: true);
         }
     }
 
@@ -581,9 +829,105 @@
         return true;
     }
 
+    private bool TryCreateUpdateCommand(out UpdateRaidEventCommand command)
+    {
+        command = default!;
+
+        var selectedEvent = SelectedEvent;
+        if (selectedEvent is null)
+        {
+            ShowEditFailure(new Failure(FailureType.NotFound, "Selected raid event was not found."));
+            return false;
+        }
+
+        if (!Guid.TryParse(editRaidTeamId, out var raidTeamId))
+        {
+            ShowEditFailure(new Failure(FailureType.Validation, "Select a raid team before updating the raid event."));
+            return false;
+        }
+
+        var option = RaidTeamOptions.FirstOrDefault(candidate => candidate.RaidTeamId == raidTeamId);
+        if (option is null)
+        {
+            ShowEditFailure(new Failure(FailureType.NotFound, "Selected raid team context was not found."));
+            return false;
+        }
+
+        if (!TryParseLocalDateTime(editStartDateTime, out var startTime))
+        {
+            ShowEditFailure(new Failure(FailureType.Validation, "Start date and time must be set with a valid date and time."));
+            return false;
+        }
+
+        DateTimeOffset? endTime = null;
+        if (!string.IsNullOrWhiteSpace(editEndDateTime))
+        {
+            if (!TryParseLocalDateTime(editEndDateTime, out var parsedEndTime))
+            {
+                ShowEditFailure(new Failure(FailureType.Validation, "End date and time must be a valid date and time."));
+                return false;
+            }
+
+            endTime = parsedEndTime;
+        }
+
+        command = new UpdateRaidEventCommand(
+            selectedEvent.Id,
+            option.GuildId,
+            option.RaidTeamId,
+            editTitle,
+            startTime,
+            endTime,
+            editInstanceName,
+            editDifficulty,
+            editNotes);
+
+        return true;
+    }
+
     private void CancelCreateForm()
     {
         ResetCreateForm(clearMessage: true);
+    }
+
+    private void StartEdit(RaidEventDto raidEvent)
+    {
+        ResetCancelState(clearMessage: true);
+
+        if (raidEvent.Status != RaidEventStatus.Scheduled)
+        {
+            ShowEditFailure(new Failure(FailureType.BusinessRule, "Cancelled raid events cannot be updated."));
+            return;
+        }
+
+        selectedRaidEventId = raidEvent.Id;
+        editTitle = raidEvent.Title;
+        editRaidTeamId = raidEvent.RaidTeamId.ToString();
+        editStartDateTime = FormatDateTimeLocalValue(raidEvent.StartTime);
+        editEndDateTime = raidEvent.EndTime.HasValue ? FormatDateTimeLocalValue(raidEvent.EndTime.Value) : string.Empty;
+        editInstanceName = raidEvent.InstanceName;
+        editDifficulty = raidEvent.Difficulty;
+        editNotes = raidEvent.Notes;
+        editMessage = null;
+        editStatus = "success";
+        isEditingSelectedEvent = true;
+    }
+
+    private void DiscardEditChanges()
+    {
+        StopEdit(clearMessage: true);
+    }
+
+    private void RequestCancel()
+    {
+        editMessage = null;
+        cancelMessage = null;
+        isConfirmingCancel = true;
+    }
+
+    private void DismissCancelConfirmation()
+    {
+        ResetCancelState(clearMessage: true);
     }
 
     private void OnCreateStartDateTimeChanged(ChangeEventArgs args)
@@ -594,6 +938,16 @@
     private void OnCreateEndDateTimeChanged(ChangeEventArgs args)
     {
         createEndDateTime = NormalizeDateTimeLocalInput(args.Value?.ToString());
+    }
+
+    private void OnEditStartDateTimeChanged(ChangeEventArgs args)
+    {
+        editStartDateTime = NormalizeDateTimeLocalInput(args.Value?.ToString());
+    }
+
+    private void OnEditEndDateTimeChanged(ChangeEventArgs args)
+    {
+        editEndDateTime = NormalizeDateTimeLocalInput(args.Value?.ToString());
     }
 
     private void ResetCreateForm(bool clearMessage)
@@ -609,6 +963,25 @@
         if (clearMessage)
         {
             createMessage = null;
+        }
+    }
+
+    private void StopEdit(bool clearMessage)
+    {
+        isEditingSelectedEvent = false;
+        editInProgress = false;
+        isConfirmingCancel = false;
+        editTitle = string.Empty;
+        editRaidTeamId = string.Empty;
+        editStartDateTime = string.Empty;
+        editEndDateTime = string.Empty;
+        editInstanceName = string.Empty;
+        editDifficulty = RaidDifficulty.Normal;
+        editNotes = string.Empty;
+
+        if (clearMessage)
+        {
+            editMessage = null;
         }
     }
 
@@ -628,6 +1001,67 @@
     {
         createMessage = message;
         createStatus = "error";
+    }
+
+    private void ShowEditSuccess(string message)
+    {
+        editMessage = message;
+        editStatus = "success";
+    }
+
+    private void ShowEditFailure(Failure failure)
+    {
+        editMessage = $"{FormatFailureType(failure.Type)}: {failure.Message}";
+        editStatus = "error";
+    }
+
+    private void ShowEditTechnicalFailure(string message)
+    {
+        editMessage = message;
+        editStatus = "error";
+    }
+
+    private void ShowCancelSuccess(string message)
+    {
+        cancelMessage = message;
+        cancelStatus = "success";
+    }
+
+    private void ShowCancelFailure(Failure failure)
+    {
+        cancelMessage = $"{FormatFailureType(failure.Type)}: {failure.Message}";
+        cancelStatus = "error";
+    }
+
+    private void ShowCancelTechnicalFailure(string message)
+    {
+        cancelMessage = message;
+        cancelStatus = "error";
+    }
+
+    private void ResetCancelState(bool clearMessage)
+    {
+        cancelInProgress = false;
+        isConfirmingCancel = false;
+
+        if (clearMessage)
+        {
+            cancelMessage = null;
+        }
+    }
+
+    private void EnsureEditStateIsValid()
+    {
+        if (!isEditingSelectedEvent)
+        {
+            return;
+        }
+
+        var selectedEvent = SelectedEvent;
+        if (selectedEvent is null || selectedEvent.Status != RaidEventStatus.Scheduled)
+        {
+            StopEdit(clearMessage: true);
+        }
     }
 
     private GuildDto? FindGuild(RaidEventDto raidEvent)
@@ -659,6 +1093,9 @@
 
     private static string FormatSummaryDate(DateTimeOffset? value)
         => value.HasValue ? value.Value.ToLocalTime().ToString("dd MMM") : "-";
+
+    private static string FormatDateTimeLocalValue(DateTimeOffset value)
+        => value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture);
 
     private static string GetNextEventDetail(RaidEventDto? raidEvent)
         => raidEvent is null ? "No planned event" : raidEvent.Title;
@@ -749,6 +1186,44 @@
             FailureType.BusinessRule => "Cannot complete action",
             _ => "Failure"
         };
+
+    private static string GetEventListItemClass(RaidEventDto raidEvent, bool isSelected)
+    {
+        var classes = "event-list-item";
+        if (isSelected)
+        {
+            classes += " event-list-item--selected";
+        }
+
+        if (raidEvent.Status == RaidEventStatus.Cancelled)
+        {
+            classes += " event-list-item--cancelled";
+        }
+
+        return classes;
+    }
+
+    private static string FormatEventStatus(RaidEventStatus status)
+        => status switch
+        {
+            RaidEventStatus.Scheduled => "Scheduled",
+            RaidEventStatus.Cancelled => "Cancelled",
+            _ => "Unknown"
+        };
+
+    private static string GetEventStatusClass(RaidEventStatus status, bool large = false)
+    {
+        var statusToken = status switch
+        {
+            RaidEventStatus.Scheduled => "scheduled",
+            RaidEventStatus.Cancelled => "cancelled",
+            _ => "unknown"
+        };
+
+        return large
+            ? $"event-status-pill event-status-pill--{statusToken} event-status-pill--large"
+            : $"event-status-pill event-status-pill--{statusToken}";
+    }
 
     private sealed record RaidTeamOption(
         Guid GuildId,

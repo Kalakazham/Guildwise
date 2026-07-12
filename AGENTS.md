@@ -137,6 +137,14 @@ dotnet tool run dotnet-ef database update \
   --context GuildwiseDbContext
 ```
 
+## Development Startup Migrations
+
+The Web app may apply pending EF Core migrations automatically during local Development startup when Postgres persistence is configured.
+
+This must stay Development-only. Do not enable automatic startup migrations for Production or other non-development environments.
+
+Use EF Core `MigrateAsync()` for this flow. Do not use `EnsureCreated()`.
+
 ## Tooling Rules
 
 * Do not add `Microsoft.EntityFrameworkCore.Design` to `Guildwise.Web` just to make EF tooling work with the Web project as startup project.
