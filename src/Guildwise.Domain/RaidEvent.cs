@@ -8,17 +8,17 @@ public sealed class RaidEvent
 
     public Guid RaidTeamId { get; private set; }
 
-    public string Title { get; private set; }
+    public string Title { get; private set; } = string.Empty;
 
     public DateTimeOffset StartTime { get; private set; }
 
     public DateTimeOffset? EndTime { get; private set; }
 
-    public string InstanceName { get; private set; }
+    public string InstanceName { get; private set; } = string.Empty;
 
     public RaidDifficulty Difficulty { get; private set; }
 
-    public string Notes { get; private set; }
+    public string Notes { get; private set; } = string.Empty;
 
     public RaidEventStatus Status { get; private set; }
 
