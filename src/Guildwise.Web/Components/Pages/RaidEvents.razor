@@ -552,7 +552,7 @@
 
         if (!TryParseLocalDateTime(createStartDateTime, out var startTime))
         {
-            ShowCreateFailure(new Failure(FailureType.Validation, "Start date and time is required."));
+            ShowCreateFailure(new Failure(FailureType.Validation, "Start date and time must be set with a valid date and time."));
             return false;
         }
 
@@ -588,12 +588,12 @@
 
     private void OnCreateStartDateTimeChanged(ChangeEventArgs args)
     {
-        createStartDateTime = args.Value?.ToString() ?? string.Empty;
+        createStartDateTime = NormalizeDateTimeLocalInput(args.Value?.ToString());
     }
 
     private void OnCreateEndDateTimeChanged(ChangeEventArgs args)
     {
-        createEndDateTime = args.Value?.ToString() ?? string.Empty;
+        createEndDateTime = NormalizeDateTimeLocalInput(args.Value?.ToString());
     }
 
     private void ResetCreateForm(bool clearMessage)
@@ -684,17 +684,7 @@
     private static bool TryParseLocalDateTime(string value, out DateTimeOffset dateTimeOffset)
     {
         dateTimeOffset = default;
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        if (!DateTime.TryParseExact(
-                value,
-                "yyyy-MM-ddTHH:mm",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out var localDateTime))
+        if (!TryParseDateTimeLocalInput(value, out var localDateTime))
         {
             return false;
         }
@@ -702,6 +692,52 @@
         localDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified);
         dateTimeOffset = new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
         return true;
+    }
+
+    private static string NormalizeDateTimeLocalInput(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return TryParseDateTimeLocalInput(value, out var localDateTime)
+            ? localDateTime.ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture)
+            : value;
+    }
+
+    private static bool TryParseDateTimeLocalInput(string value, out DateTime localDateTime)
+    {
+        localDateTime = default;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        var acceptedFormats = new[]
+        {
+            "yyyy-MM-ddTHH:mm",
+            "yyyy-MM-ddTHH:mm:ss",
+            "dd.MM.yyyy HH:mm",
+            "dd.MM.yyyy HH:mm:ss"
+        };
+
+        if (DateTime.TryParseExact(
+                trimmed,
+                acceptedFormats,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out localDateTime))
+        {
+            return true;
+        }
+
+        return DateTime.TryParse(
+            trimmed,
+            CultureInfo.CurrentCulture,
+            DateTimeStyles.AllowWhiteSpaces,
+            out localDateTime);
     }
 
     private static string FormatFailureType(FailureType type)

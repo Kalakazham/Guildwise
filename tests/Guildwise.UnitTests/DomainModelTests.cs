@@ -543,6 +543,29 @@ public sealed class DomainModelTests
     }
 
     [Fact]
+    public void RaidEvent_Create_Normalizes_TimeValues_To_Utc()
+    {
+        var startTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
+        var endTime = startTime.AddHours(3);
+
+        var raidEvent = RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            startTime,
+            endTime,
+            "Nerubar Palace",
+            RaidDifficulty.Heroic,
+            null);
+
+        Assert.Equal(TimeSpan.Zero, raidEvent.StartTime.Offset);
+        Assert.Equal(startTime.ToUniversalTime(), raidEvent.StartTime);
+        Assert.NotNull(raidEvent.EndTime);
+        Assert.Equal(TimeSpan.Zero, raidEvent.EndTime.Value.Offset);
+        Assert.Equal(endTime.ToUniversalTime(), raidEvent.EndTime.Value);
+    }
+
+    [Fact]
     public void RaidEvent_Create_Rejects_Empty_Guild_Or_RaidTeam()
     {
         var startTime = DateTimeOffset.UtcNow.AddDays(1);

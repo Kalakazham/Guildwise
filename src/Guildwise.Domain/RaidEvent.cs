@@ -55,8 +55,8 @@ public sealed class RaidEvent
         GuildId = guildId;
         RaidTeamId = raidTeamId;
         Title = DomainGuard.Required(title, nameof(title));
-        StartTime = startTime;
-        EndTime = endTime;
+        StartTime = startTime.ToUniversalTime();
+        EndTime = endTime?.ToUniversalTime();
         InstanceName = DomainGuard.Required(instanceName, nameof(instanceName));
         Difficulty = difficulty;
         Notes = notes?.Trim() ?? string.Empty;
