@@ -1,0 +1,223 @@
+@using Guildwise.Application.Contracts.RaidTeamManagement
+@using Guildwise.Domain
+
+<ContentPanel Title="Team Detail" Class="team-detail-panel">
+    @if (Guild.Teams.Count == 0)
+    {
+        <EmptyState
+            Title="Select a raid team."
+            Message="This guild does not have raid teams yet." />
+    }
+    else if (SelectedTeam is null)
+    {
+        <EmptyState
+            Title="No raid team selected."
+            Message="Choose a raid team from the overview to inspect its members." />
+    }
+    else
+    {        var classOverview = GetClassOverview(SelectedTeam);
+        var compositionHints = GetCompositionHints(SelectedTeam);
+        var membersWithoutMain = CountMembersWithoutMain(SelectedTeam);
+
+        <div class="team-detail-header">
+            <div>
+                <RaidTeamBadge Name="@SelectedTeam.Name" />
+                <h2>@SelectedTeam.Name</h2>
+                <p>@SelectedTeam.MemberCount members assigned to this raid team.</p>
+            </div>
+            <div class="composition-cards" aria-label="Role composition">
+                <div><span>@SelectedTeam.MemberCount</span><small>Total</small></div>
+                <div><span>@SelectedTeam.Composition.TankCount</span><small>Tanks</small></div>
+                <div><span>@SelectedTeam.Composition.HealerCount</span><small>Healers</small></div>
+                <div><span>@SelectedTeam.Composition.DamageCount</span><small>DPS</small></div>
+                <div><span>@membersWithoutMain</span><small>Missing Main</small></div>
+            </div>
+        </div>
+
+        <div class="composition-insights">
+            <section class="composition-insight-card" aria-label="Class overview">
+                <h3>Class Overview</h3>
+                @if (classOverview.Count == 0)
+                {
+                    <p class="muted">No class data available for this team.</p>
+                }
+                else
+                {
+                    <div class="class-overview-list">
+                        @foreach (var item in classOverview)
+                        {
+                            <div class="class-overview-item">
+                                <CharacterClassBadge Value="item.CharacterClass" />
+                                <span>@item.Count</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="composition-insight-card" aria-label="Composition hints">
+                <h3>Composition Hints</h3>
+                @if (compositionHints.Count == 0)
+                {
+                    <p class="muted">No composition hints for this team.</p>
+                }
+                else
+                {
+                    <div class="composition-hint-list">
+                        @foreach (var hint in compositionHints)
+                        {
+                            <span class="composition-hint">@hint</span>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ActionMessage))
+        {
+            <div class="raid-status-message raid-status-message--@ActionStatus" role="status">
+                @ActionMessage
+            </div>
+        }
+
+        @if (SelectedTeam.Members.Count == 0)
+        {
+            <EmptyState
+                Title="No members in this raid team yet."
+                Message="Use available guild members below to start filling this team." />
+        }
+        else
+        {
+            <div class="raid-member-table-wrap">
+                <table class="raid-member-table">
+                    <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Main character</th>
+                        <th>Class</th>
+                        <th>Role</th>
+                        <th>Main</th>
+                        <th>Guild rank</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var member in SelectedTeam.Members)
+                    {
+                        <tr>
+                            <td><div class="player-cell"><span>@member.PlayerDisplayName</span></div></td>
+                            <td>
+                                @if (member.HasMainCharacter)
+                                {
+                                    <div class="character-cell">
+                                        <span>@member.MainCharacterName</span>
+                                        <small>@member.CharacterRegion - @member.CharacterRealm</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="muted">No main character</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="badge-stack">
+                                    <CharacterClassBadge Value="member.CharacterClass" />
+                                    <SpecializationDisplay Value="member.Specialization" />
+                                </div>
+                            </td>
+                            <td><CharacterRoleBadge Value="member.Role" /></td>
+                            <td><MainAltBadge HasMainCharacter="member.HasMainCharacter" /></td>
+                            <td>
+                                <div class="badge-cluster">
+                                    <GuildRankBadge Value="member.GuildRank" />
+                                    @foreach (var role in member.AdditionalRoles)
+                                    {
+                                        <GuildRoleBadge Value="role" />
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <button type="button" class="raid-row-action" disabled="@ActionInProgress" @onclick="() => OnRemovePlayer.InvokeAsync(member)">Remove</button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <RaidTeamAvailablePlayers
+            Guild="Guild"
+            SelectedTeam="SelectedTeam"
+            ActionInProgress="ActionInProgress"
+            OnAddPlayer="OnAddPlayer" />
+    }
+</ContentPanel>
+
+@code {
+    [Parameter, EditorRequired]
+    public required RaidTeamManagementGuildDto Guild { get; init; }
+
+    [Parameter]
+    public RaidTeamManagementTeamDto? SelectedTeam { get; init; }
+
+    [Parameter]
+    public string? ActionMessage { get; init; }
+
+    [Parameter]
+    public string ActionStatus { get; init; } = "success";
+
+    [Parameter]
+    public bool ActionInProgress { get; init; }
+
+    [Parameter]
+    public EventCallback<RaidTeamManagementMemberDto> OnRemovePlayer { get; init; }
+
+    [Parameter]
+    public EventCallback<AvailableRaidTeamPlayerDto> OnAddPlayer { get; init; }
+
+    private static IReadOnlyList<ClassOverviewItem> GetClassOverview(RaidTeamManagementTeamDto team)
+        => team.Members
+            .Where(member => member.CharacterClass.HasValue)
+            .GroupBy(member => member.CharacterClass!.Value)
+            .Select(group => new ClassOverviewItem(group.Key, group.Count()))
+            .OrderBy(item => RosterDisplayText.CharacterClass(item.CharacterClass), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private static IReadOnlyList<string> GetCompositionHints(RaidTeamManagementTeamDto team)
+    {
+        var hints = new List<string>();
+        var composition = team.Composition;
+
+        if (composition.TankCount == 0)
+        {
+            hints.Add("No tank assigned");
+        }
+
+        if (composition.HealerCount == 0)
+        {
+            hints.Add("No healer assigned");
+        }
+
+        if (composition.DamageCount == 0)
+        {
+            hints.Add("No DPS assigned");
+        }
+
+        var membersWithoutMain = CountMembersWithoutMain(team);
+        if (membersWithoutMain > 0)
+        {
+            hints.Add($"{membersWithoutMain} members without main character");
+        }
+
+        return hints;
+    }
+
+    private static int CountMembersWithoutMain(RaidTeamManagementTeamDto team)
+        => team.Members.Count(member => !member.HasMainCharacter);
+
+    private sealed record ClassOverviewItem(CharacterClass CharacterClass, int Count);
+}
+
+
+
