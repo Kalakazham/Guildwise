@@ -1,11 +1,16 @@
 @page "/raid-events"
 @rendermode InteractiveServer
 
+@using System.Globalization
+@using Guildwise.Application.Common.Results
 @using Guildwise.Application.Contracts.Guilds
 @using Guildwise.Application.Contracts.RaidEvents
 @using Guildwise.Application.Contracts.RaidTeams
 @using Guildwise.Application.Guilds.ListGuilds
+@using Guildwise.Application.RaidEvents.CreateRaidEvent
 @using Guildwise.Application.RaidEvents.ListRaidEvents
+@using Guildwise.Domain
+@inject CreateRaidEventHandler CreateRaidEventHandler
 @inject ListGuildsHandler ListGuildsHandler
 @inject ListRaidEventsHandler ListRaidEventsHandler
 
@@ -18,7 +23,7 @@
         Subtitle="Review planned raid dates, raid team ownership and guild context from the manual event foundation in Guildwise.">
         <Actions>
             <a class="event-action event-action--secondary" href="/raid-teams">Raid Teams</a>
-            <button type="button" class="event-action" @onclick="LoadRaidEventsAsync">Refresh</button>
+            <button type="button" class="event-action" @onclick="() => LoadRaidEventsAsync()">Refresh</button>
         </Actions>
     </PageHeader>
 
@@ -33,7 +38,7 @@
                 Title="Raid event data could not be loaded."
                 Message="@loadFailure">
                 <Actions>
-                    <button type="button" class="event-action" @onclick="LoadRaidEventsAsync">Try again</button>
+                    <button type="button" class="event-action" @onclick="() => LoadRaidEventsAsync()">Try again</button>
                 </Actions>
             </EmptyState>
         </ContentPanel>
@@ -69,14 +74,109 @@
             <SummaryCard Label="Events" Value="0" Detail="No planned raid events" />
             <SummaryCard Label="Guilds" Value="@guilds.Count.ToString()" Detail="Available guild contexts" />
             <SummaryCard Label="Raid teams with events" Value="0" Detail="No event assignments yet" />
-            <SummaryCard Label="Next event" Value="-" Detail="Create events in the next slice" />
+            <SummaryCard Label="Next event" Value="-" Detail="No planned event" />
         </section>
 
-        <ContentPanel Title="Raid Event Overview">
-            <EmptyState
-                Title="No raid events yet."
-                Message="Raid event persistence is available, but no raid events have been created yet." />
-        </ContentPanel>
+        <section class="event-management-grid">
+            <div class="event-management-sidebar">
+                <ContentPanel Title="Create Raid Event" Class="event-create-panel">
+                    <form class="event-create-form" @onsubmit="CreateRaidEventAsync" @onsubmit:preventDefault>
+                        <div class="event-create-form__grid">
+                            <label class="event-form-field event-form-field--wide">
+                                Title
+                                <input
+                                    @bind="createTitle"
+                                    disabled="@createInProgress"
+                                    placeholder="Weekly progression raid" />
+                            </label>
+
+                            <label class="event-form-field event-form-field--wide">
+                                Raid team
+                                <select @bind="createRaidTeamId" disabled="@createInProgress">
+                                    @foreach (var option in RaidTeamOptions)
+                                    {
+                                        <option value="@option.RaidTeamId.ToString()">@FormatRaidTeamOption(option)</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="event-form-field">
+                                Start date/time
+                                <input
+                                    type="datetime-local"
+                                    value="@createStartDateTime"
+                                    @oninput="OnCreateStartDateTimeChanged"
+                                    disabled="@createInProgress" />
+                            </label>
+
+                            <label class="event-form-field">
+                                End date/time
+                                <input
+                                    type="datetime-local"
+                                    value="@createEndDateTime"
+                                    @oninput="OnCreateEndDateTimeChanged"
+                                    disabled="@createInProgress" />
+                            </label>
+
+                            <label class="event-form-field">
+                                Instance
+                                <input
+                                    @bind="createInstanceName"
+                                    disabled="@createInProgress"
+                                    placeholder="Manaforge Omega" />
+                            </label>
+
+                            <label class="event-form-field">
+                                Difficulty
+                                <select @bind="createDifficulty" disabled="@createInProgress">
+                                    @foreach (var difficulty in RaidDifficultyOptions)
+                                    {
+                                        <option value="@difficulty">@RosterDisplayText.RaidDifficulty(difficulty)</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="event-form-field event-form-field--wide">
+                                Notes
+                                <textarea
+                                    @bind="createNotes"
+                                    disabled="@createInProgress"
+                                    rows="3"
+                                    placeholder="Optional planning notes"></textarea>
+                            </label>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(createMessage))
+                        {
+                            <div class="event-status-message event-status-message--@createStatus" role="status">
+                                @createMessage
+                            </div>
+                        }
+
+                        <div class="event-create-form__actions">
+                            <button type="submit" class="event-action" disabled="@createInProgress">
+                                @(createInProgress ? "Creating..." : "Create Event")
+                            </button>
+                            <button type="button" class="event-action event-action--secondary" disabled="@createInProgress" @onclick="CancelCreateForm">
+                                Reset
+                            </button>
+                        </div>
+                    </form>
+                </ContentPanel>
+
+                <ContentPanel Title="Raid Event Overview">
+                    <EmptyState
+                        Title="No raid events yet."
+                        Message="Create the first raid event to start planning raid dates for an existing raid team." />
+                </ContentPanel>
+            </div>
+
+            <ContentPanel Title="Event Detail" Class="event-detail-panel">
+                <EmptyState
+                    Title="No raid event selected."
+                    Message="Create a raid event or choose one from the overview to inspect its details." />
+            </ContentPanel>
+        </section>
     }
     else
     {
@@ -91,30 +191,117 @@
         </section>
 
         <section class="event-management-grid">
-            <ContentPanel Title="Event Overview" Class="event-overview-panel">
-                <div class="event-list" role="list" aria-label="Raid events">
-                    @foreach (var raidEvent in orderedEvents)
-                    {
-                        var isSelected = selectedEvent?.Id == raidEvent.Id;
-                        var guild = FindGuild(raidEvent);
-                        var raidTeam = FindRaidTeam(raidEvent);
+            <div class="event-management-sidebar">
+                <ContentPanel Title="Create Raid Event" Class="event-create-panel">
+                    <form class="event-create-form" @onsubmit="CreateRaidEventAsync" @onsubmit:preventDefault>
+                        <div class="event-create-form__grid">
+                            <label class="event-form-field event-form-field--wide">
+                                Title
+                                <input
+                                    @bind="createTitle"
+                                    disabled="@createInProgress"
+                                    placeholder="Weekly progression raid" />
+                            </label>
 
-                        <button
-                            type="button"
-                            class="event-list-item @(isSelected ? "event-list-item--selected" : string.Empty)"
-                            @onclick="() => SelectEvent(raidEvent.Id)"
-                            aria-pressed="@isSelected">
-                            <span class="event-list-item__title">@raidEvent.Title</span>
-                            <span class="event-list-item__time">@FormatDateTime(raidEvent.StartTime)</span>
-                            <span class="event-list-item__context">
-                                <RaidTeamBadge Name="@GetRaidTeamName(raidTeam)" />
-                                <span>@GetGuildContext(guild)</span>
-                            </span>
-                            <span class="event-difficulty">@RosterDisplayText.RaidDifficulty(raidEvent.Difficulty)</span>
-                        </button>
-                    }
-                </div>
-            </ContentPanel>
+                            <label class="event-form-field event-form-field--wide">
+                                Raid team
+                                <select @bind="createRaidTeamId" disabled="@createInProgress">
+                                    @foreach (var option in RaidTeamOptions)
+                                    {
+                                        <option value="@option.RaidTeamId.ToString()">@FormatRaidTeamOption(option)</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="event-form-field">
+                                Start date/time
+                                <input
+                                    type="datetime-local"
+                                    value="@createStartDateTime"
+                                    @oninput="OnCreateStartDateTimeChanged"
+                                    disabled="@createInProgress" />
+                            </label>
+
+                            <label class="event-form-field">
+                                End date/time
+                                <input
+                                    type="datetime-local"
+                                    value="@createEndDateTime"
+                                    @oninput="OnCreateEndDateTimeChanged"
+                                    disabled="@createInProgress" />
+                            </label>
+
+                            <label class="event-form-field">
+                                Instance
+                                <input
+                                    @bind="createInstanceName"
+                                    disabled="@createInProgress"
+                                    placeholder="Manaforge Omega" />
+                            </label>
+
+                            <label class="event-form-field">
+                                Difficulty
+                                <select @bind="createDifficulty" disabled="@createInProgress">
+                                    @foreach (var difficulty in RaidDifficultyOptions)
+                                    {
+                                        <option value="@difficulty">@RosterDisplayText.RaidDifficulty(difficulty)</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label class="event-form-field event-form-field--wide">
+                                Notes
+                                <textarea
+                                    @bind="createNotes"
+                                    disabled="@createInProgress"
+                                    rows="3"
+                                    placeholder="Optional planning notes"></textarea>
+                            </label>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(createMessage))
+                        {
+                            <div class="event-status-message event-status-message--@createStatus" role="status">
+                                @createMessage
+                            </div>
+                        }
+
+                        <div class="event-create-form__actions">
+                            <button type="submit" class="event-action" disabled="@createInProgress">
+                                @(createInProgress ? "Creating..." : "Create Event")
+                            </button>
+                            <button type="button" class="event-action event-action--secondary" disabled="@createInProgress" @onclick="CancelCreateForm">
+                                Reset
+                            </button>
+                        </div>
+                    </form>
+                </ContentPanel>
+
+                <ContentPanel Title="Event Overview" Class="event-overview-panel">
+                    <div class="event-list" role="list" aria-label="Raid events">
+                        @foreach (var raidEvent in orderedEvents)
+                        {
+                            var isSelected = selectedEvent?.Id == raidEvent.Id;
+                            var guild = FindGuild(raidEvent);
+                            var raidTeam = FindRaidTeam(raidEvent);
+
+                            <button
+                                type="button"
+                                class="event-list-item @(isSelected ? "event-list-item--selected" : string.Empty)"
+                                @onclick="() => SelectEvent(raidEvent.Id)"
+                                aria-pressed="@isSelected">
+                                <span class="event-list-item__title">@raidEvent.Title</span>
+                                <span class="event-list-item__time">@FormatDateTime(raidEvent.StartTime)</span>
+                                <span class="event-list-item__context">
+                                    <RaidTeamBadge Name="@GetRaidTeamName(raidTeam)" />
+                                    <span>@GetGuildContext(guild)</span>
+                                </span>
+                                <span class="event-difficulty">@RosterDisplayText.RaidDifficulty(raidEvent.Difficulty)</span>
+                            </button>
+                        }
+                    </div>
+                </ContentPanel>
+            </div>
 
             <ContentPanel Title="Event Detail" Class="event-detail-panel">
                 @if (selectedEvent is null)
@@ -187,7 +374,25 @@
     private IReadOnlyList<GuildDto> guilds = [];
     private bool isLoading = true;
     private string? loadFailure;
+    private bool createInProgress;
+    private string? createMessage;
+    private string createStatus = "success";
     private Guid? selectedRaidEventId;
+    private string createTitle = string.Empty;
+    private string createRaidTeamId = string.Empty;
+    private string createStartDateTime = string.Empty;
+    private string createEndDateTime = string.Empty;
+    private string createInstanceName = string.Empty;
+    private RaidDifficulty createDifficulty = RaidDifficulty.Normal;
+    private string createNotes = string.Empty;
+
+    private static readonly IReadOnlyList<RaidDifficulty> RaidDifficultyOptions =
+    [
+        RaidDifficulty.LookingForRaid,
+        RaidDifficulty.Normal,
+        RaidDifficulty.Heroic,
+        RaidDifficulty.Mythic
+    ];
 
     private IReadOnlyList<RaidEventDto> OrderedRaidEvents
         => raidEvents
@@ -208,6 +413,20 @@
             .Distinct()
             .Count();
 
+    private IReadOnlyList<RaidTeamOption> RaidTeamOptions
+        => guilds
+            .SelectMany(guild => guild.RaidTeams.Select(raidTeam => new RaidTeamOption(
+                guild.Id,
+                raidTeam.Id,
+                raidTeam.Name,
+                guild.Name,
+                guild.Region,
+                guild.Realm)))
+            .OrderBy(option => option.GuildName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(option => option.RaidTeamName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(option => option.RaidTeamId)
+            .ToList();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadRaidEventsAsync();
@@ -223,6 +442,7 @@
             guilds = await ListGuildsHandler.HandleAsync(new ListGuildsQuery());
             raidEvents = await ListRaidEventsHandler.HandleAsync(new ListRaidEventsQuery());
             EnsureSelection();
+            EnsureCreateRaidTeamSelection();
         }
         catch
         {
@@ -234,6 +454,47 @@
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task LoadRaidEventsAsync(Guid? preferredRaidEventId)
+    {
+        selectedRaidEventId = preferredRaidEventId;
+        await LoadRaidEventsAsync();
+    }
+
+    private async Task CreateRaidEventAsync()
+    {
+        createMessage = null;
+
+        if (!TryCreateCommand(out var command))
+        {
+            return;
+        }
+
+        createInProgress = true;
+
+        try
+        {
+            var result = await CreateRaidEventHandler.HandleAsync(command);
+            if (result.IsFailure)
+            {
+                ShowCreateFailure(result.Failure!);
+                return;
+            }
+
+            var createdEvent = result.Value ?? throw new InvalidOperationException("Successful create raid event result did not include a value.");
+            ShowCreateSuccess($"Created {createdEvent.Title}.");
+            ResetCreateForm(clearMessage: false);
+            await LoadRaidEventsAsync(createdEvent.Id);
+        }
+        catch
+        {
+            ShowCreateTechnicalFailure("An unexpected technical failure occurred while creating the raid event.");
+        }
+        finally
+        {
+            createInProgress = false;
         }
     }
 
@@ -256,6 +517,119 @@
         }
     }
 
+    private void EnsureCreateRaidTeamSelection()
+    {
+        var options = RaidTeamOptions;
+        if (options.Count == 0)
+        {
+            createRaidTeamId = string.Empty;
+            return;
+        }
+
+        if (!Guid.TryParse(createRaidTeamId, out var selectedRaidTeamId)
+            || options.All(option => option.RaidTeamId != selectedRaidTeamId))
+        {
+            createRaidTeamId = options.First().RaidTeamId.ToString();
+        }
+    }
+
+    private bool TryCreateCommand(out CreateRaidEventCommand command)
+    {
+        command = default!;
+
+        if (!Guid.TryParse(createRaidTeamId, out var raidTeamId))
+        {
+            ShowCreateFailure(new Failure(FailureType.Validation, "Select a raid team before creating a raid event."));
+            return false;
+        }
+
+        var option = RaidTeamOptions.FirstOrDefault(candidate => candidate.RaidTeamId == raidTeamId);
+        if (option is null)
+        {
+            ShowCreateFailure(new Failure(FailureType.NotFound, "Selected raid team context was not found."));
+            return false;
+        }
+
+        if (!TryParseLocalDateTime(createStartDateTime, out var startTime))
+        {
+            ShowCreateFailure(new Failure(FailureType.Validation, "Start date and time is required."));
+            return false;
+        }
+
+        DateTimeOffset? endTime = null;
+        if (!string.IsNullOrWhiteSpace(createEndDateTime))
+        {
+            if (!TryParseLocalDateTime(createEndDateTime, out var parsedEndTime))
+            {
+                ShowCreateFailure(new Failure(FailureType.Validation, "End date and time must be a valid date and time."));
+                return false;
+            }
+
+            endTime = parsedEndTime;
+        }
+
+        command = new CreateRaidEventCommand(
+            option.GuildId,
+            option.RaidTeamId,
+            createTitle,
+            startTime,
+            endTime,
+            createInstanceName,
+            createDifficulty,
+            createNotes);
+
+        return true;
+    }
+
+    private void CancelCreateForm()
+    {
+        ResetCreateForm(clearMessage: true);
+    }
+
+    private void OnCreateStartDateTimeChanged(ChangeEventArgs args)
+    {
+        createStartDateTime = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnCreateEndDateTimeChanged(ChangeEventArgs args)
+    {
+        createEndDateTime = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ResetCreateForm(bool clearMessage)
+    {
+        createTitle = string.Empty;
+        createStartDateTime = string.Empty;
+        createEndDateTime = string.Empty;
+        createInstanceName = string.Empty;
+        createDifficulty = RaidDifficulty.Normal;
+        createNotes = string.Empty;
+        EnsureCreateRaidTeamSelection();
+
+        if (clearMessage)
+        {
+            createMessage = null;
+        }
+    }
+
+    private void ShowCreateSuccess(string message)
+    {
+        createMessage = message;
+        createStatus = "success";
+    }
+
+    private void ShowCreateFailure(Failure failure)
+    {
+        createMessage = $"{FormatFailureType(failure.Type)}: {failure.Message}";
+        createStatus = "error";
+    }
+
+    private void ShowCreateTechnicalFailure(string message)
+    {
+        createMessage = message;
+        createStatus = "error";
+    }
+
     private GuildDto? FindGuild(RaidEventDto raidEvent)
         => guilds.FirstOrDefault(guild => guild.Id == raidEvent.GuildId);
 
@@ -273,6 +647,9 @@
 
     private static string GetRaidTeamName(RaidTeamDto? raidTeam)
         => raidTeam?.Name ?? "Unknown raid team";
+
+    private static string FormatRaidTeamOption(RaidTeamOption option)
+        => $"{option.RaidTeamName} - {option.GuildName} - {option.Region} - {option.Realm}";
 
     private static string FormatDateTime(DateTimeOffset value)
         => value.ToLocalTime().ToString("ddd, dd MMM yyyy HH:mm");
@@ -303,4 +680,45 @@
             ? $"{(int)duration.TotalHours}h {duration.Minutes}m"
             : $"{duration.Minutes}m";
     }
+
+    private static bool TryParseLocalDateTime(string value, out DateTimeOffset dateTimeOffset)
+    {
+        dateTimeOffset = default;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (!DateTime.TryParseExact(
+                value,
+                "yyyy-MM-ddTHH:mm",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var localDateTime))
+        {
+            return false;
+        }
+
+        localDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified);
+        dateTimeOffset = new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
+        return true;
+    }
+
+    private static string FormatFailureType(FailureType type)
+        => type switch
+        {
+            FailureType.NotFound => "Not found",
+            FailureType.Validation => "Validation",
+            FailureType.Conflict => "Conflict",
+            FailureType.BusinessRule => "Cannot complete action",
+            _ => "Failure"
+        };
+
+    private sealed record RaidTeamOption(
+        Guid GuildId,
+        Guid RaidTeamId,
+        string RaidTeamName,
+        string GuildName,
+        string Region,
+        string Realm);
 }
