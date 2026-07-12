@@ -261,6 +261,17 @@ dotnet build
 dotnet test
 ```
 
+## Code Quality Guardrails
+
+Guildwise uses `tools/check-code-quality.ps1` to enforce lightweight file-size guardrails and known-debt baselines.
+
+- Run `pwsh -NoProfile -File tools/check-code-quality.ps1` before completing implementation work.
+- Do not create new large files that violate the current gates.
+- Do not let known-debt files grow beyond `tools/code-quality-baseline.json`.
+- Do not raise baseline limits without explicit user approval.
+- Do not bypass quality gates to land a feature.
+- If a feature would grow an already large file, refactor first or provide a focused refactor plan.
+
 ## Changelog Rules
 
 Guildwise uses `CHANGELOG.md` to track notable changes.
