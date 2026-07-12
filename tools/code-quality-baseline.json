@@ -1,0 +1,39 @@
+{
+  "knownDebt": [
+    {
+      "path": "tests/Guildwise.UnitTests/ApplicationUseCaseTests.cs",
+      "maxLines": 2057,
+      "reason": "Large accumulated Application use case test fixture and scenario coverage."
+    },
+    {
+      "path": "src/Guildwise.Web/Components/Pages/RaidEvents.razor",
+      "maxLines": 1729,
+      "reason": "Raid event planning, lifecycle and signup UI grew before component extraction."
+    },
+    {
+      "path": "tests/Guildwise.UnitTests/DomainModelTests.cs",
+      "maxLines": 891,
+      "reason": "Large accumulated Domain behavior test coverage."
+    },
+    {
+      "path": "tests/Guildwise.IntegrationTests/EfApplicationPersistenceTests.cs",
+      "maxLines": 535,
+      "reason": "Large accumulated EF-backed Application persistence flow coverage."
+    },
+    {
+      "path": "src/Guildwise.Web/Components/Pages/RaidTeamManagement.razor",
+      "maxLines": 782,
+      "reason": "Raid team management page predates code size guardrails."
+    },
+    {
+      "path": "src/Guildwise.Web/Components/Pages/Home.razor",
+      "maxLines": 585,
+      "reason": "Manual roster setup and verification page predates code size guardrails."
+    },
+    {
+      "path": "src/Guildwise.Web/Components/Pages/RosterOverview.razor",
+      "maxLines": 498,
+      "reason": "Roster overview page is above the Razor page target and should not grow further."
+    }
+  ]
+}
