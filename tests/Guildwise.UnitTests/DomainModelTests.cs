@@ -514,6 +514,144 @@ public sealed class DomainModelTests
         Assert.Throws<ArgumentOutOfRangeException>(() => member.AddAdditionalRole((AdditionalGuildRole)999));
     }
 
+    [Fact]
+    public void RaidEvent_Create_Creates_Valid_Event()
+    {
+        var guildId = Guid.NewGuid();
+        var raidTeamId = Guid.NewGuid();
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+        var endTime = startTime.AddHours(3);
+
+        var raidEvent = RaidEvent.Create(
+            guildId,
+            raidTeamId,
+            " Liberation of Undermine ",
+            startTime,
+            endTime,
+            " Liberation of Undermine ",
+            RaidDifficulty.Heroic,
+            "  Bring flasks. ");
+
+        Assert.Equal(guildId, raidEvent.GuildId);
+        Assert.Equal(raidTeamId, raidEvent.RaidTeamId);
+        Assert.Equal("Liberation of Undermine", raidEvent.Title);
+        Assert.Equal(startTime, raidEvent.StartTime);
+        Assert.Equal(endTime, raidEvent.EndTime);
+        Assert.Equal("Liberation of Undermine", raidEvent.InstanceName);
+        Assert.Equal(RaidDifficulty.Heroic, raidEvent.Difficulty);
+        Assert.Equal("Bring flasks.", raidEvent.Notes);
+    }
+
+    [Fact]
+    public void RaidEvent_Create_Rejects_Empty_Guild_Or_RaidTeam()
+    {
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+
+        Assert.Throws<ArgumentException>(() => RaidEvent.Create(
+            Guid.Empty,
+            Guid.NewGuid(),
+            "Raid Night",
+            startTime,
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+
+        Assert.Throws<ArgumentException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.Empty,
+            "Raid Night",
+            startTime,
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+    }
+
+    [Fact]
+    public void RaidEvent_Create_Rejects_Blank_Title()
+    {
+        Assert.Throws<ArgumentException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            " ",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+    }
+
+    [Fact]
+    public void RaidEvent_Create_Rejects_Blank_InstanceName()
+    {
+        Assert.Throws<ArgumentException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            " ",
+            RaidDifficulty.Normal,
+            null));
+    }
+
+    [Fact]
+    public void RaidEvent_Create_Rejects_Default_StartTime()
+    {
+        Assert.Throws<ArgumentException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            default,
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+    }
+
+    [Fact]
+    public void RaidEvent_Create_Rejects_EndTime_Not_After_StartTime()
+    {
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+
+        Assert.Throws<ArgumentException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            startTime,
+            startTime,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null));
+    }
+
+    [Fact]
+    public void RaidEvent_Create_Rejects_Unknown_And_Undefined_Difficulty()
+    {
+        var startTime = DateTimeOffset.UtcNow.AddDays(1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            startTime,
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Unknown,
+            null));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => RaidEvent.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Raid Night",
+            startTime,
+            null,
+            "Nerubar Palace",
+            (RaidDifficulty)999,
+            null));
+    }
+
     private static Character CreateMainReadyCharacter(Player player)
         => player.AddCharacter(
             "Alysa",

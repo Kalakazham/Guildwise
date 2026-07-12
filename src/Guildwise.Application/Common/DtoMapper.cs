@@ -2,6 +2,7 @@ using Guildwise.Application.Contracts.Characters;
 using Guildwise.Application.Contracts.GuildMembers;
 using Guildwise.Application.Contracts.Guilds;
 using Guildwise.Application.Contracts.Players;
+using Guildwise.Application.Contracts.RaidEvents;
 using Guildwise.Application.Contracts.RaidTeams;
 using Guildwise.Domain;
 
@@ -42,6 +43,18 @@ internal static class DtoMapper
             raidTeam.GuildId,
             raidTeam.Name,
             raidTeam.Members.Select(ToDto).ToList());
+
+    internal static RaidEventDto ToDto(RaidEvent raidEvent)
+        => new(
+            raidEvent.Id,
+            raidEvent.GuildId,
+            raidEvent.RaidTeamId,
+            raidEvent.Title,
+            raidEvent.StartTime,
+            raidEvent.EndTime,
+            raidEvent.InstanceName,
+            raidEvent.Difficulty,
+            raidEvent.Notes);
 
     internal static GuildMemberDto ToDto(GuildMember member)
         => new(

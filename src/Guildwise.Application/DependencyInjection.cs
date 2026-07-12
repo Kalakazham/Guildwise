@@ -18,6 +18,9 @@ using Guildwise.Application.Players.DeletePlayer;
 using Guildwise.Application.Players.GetPlayer;
 using Guildwise.Application.Players.ListPlayers;
 using Guildwise.Application.Players.UpdatePlayer;
+using Guildwise.Application.RaidEvents.CreateRaidEvent;
+using Guildwise.Application.RaidEvents.GetRaidEvent;
+using Guildwise.Application.RaidEvents.ListRaidEvents;
 using Guildwise.Application.RaidTeams.AddPlayerToRaidTeam;
 using Guildwise.Application.RaidTeams.CreateRaidTeam;
 using Guildwise.Application.RaidTeams.DeleteRaidTeam;
@@ -64,6 +67,10 @@ public static class DependencyInjection
         services.AddScoped<DeleteRaidTeamHandler>();
         services.AddScoped<AddPlayerToRaidTeamHandler>();
         services.AddScoped<RemovePlayerFromRaidTeamHandler>();
+
+        services.AddScoped<CreateRaidEventHandler>();
+        services.AddScoped<GetRaidEventHandler>();
+        services.AddScoped<ListRaidEventsHandler>();
 
         services.AddScoped<GetRaidTeamManagementOverviewHandler>();
 

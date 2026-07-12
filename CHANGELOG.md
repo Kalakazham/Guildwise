@@ -8,6 +8,8 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Added the raid event planning foundation with Domain, Application and persistence support.
+
 ### Changed
 
 ### Fixed
