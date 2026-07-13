@@ -29,9 +29,9 @@ PostgreSQL bleibt durch die vorhandenen Integrationstests geschützt.
 
 ## Geplante Slices
 
-* `0021a – Playwright host foundation`
-* `0021b – Playwright CI and diagnostics`
-* `0021c – Initial Playwright smoke flows`
+* `0021a – Playwright host foundation`: abgeschlossen mit App-Host-Fixture und Navigationstest.
+* `0021b – Playwright CI and diagnostics`: umgesetzt mit separatem CI-Job, Chromium-Installation und Fehlerartefakten.
+* `0021c – Initial Playwright smoke flows`: offen für fachliche Browserflows.
 
 ## Out of Scope
 

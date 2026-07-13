@@ -20,6 +20,8 @@ public sealed class GuildwiseWebAppFixture : IAsyncLifetime, IDisposable
 
     public string BaseUrl { get; private set; } = string.Empty;
 
+    public string ArtifactRootPath { get; private set; } = string.Empty;
+
     public string StdoutLogPath { get; private set; } = string.Empty;
 
     public string StderrLogPath { get; private set; } = string.Empty;
@@ -35,16 +37,17 @@ public sealed class GuildwiseWebAppFixture : IAsyncLifetime, IDisposable
                 $"Guildwise.Web was not built. Expected '{webAssemblyPath}'. Run 'dotnet build Guildwise.sln --no-restore' before executing E2E tests.");
         }
 
-        var logDirectory = Path.Combine(repositoryRoot, "artifacts", "playwright", "logs");
+        ArtifactRootPath = Path.Combine(repositoryRoot, "artifacts", "playwright");
+        var logDirectory = Path.Combine(ArtifactRootPath, "logs");
         Directory.CreateDirectory(logDirectory);
         StdoutLogPath = Path.Combine(logDirectory, "app-stdout.log");
         StderrLogPath = Path.Combine(logDirectory, "app-stderr.log");
 
-        _stdoutWriter = new StreamWriter(File.Open(StdoutLogPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+        _stdoutWriter = new StreamWriter(File.Open(StdoutLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
         {
             AutoFlush = true
         };
-        _stderrWriter = new StreamWriter(File.Open(StderrLogPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+        _stderrWriter = new StreamWriter(File.Open(StderrLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
         {
             AutoFlush = true
         };
@@ -124,6 +127,7 @@ public sealed class GuildwiseWebAppFixture : IAsyncLifetime, IDisposable
         startInfo.Environment["ASPNETCORE_URLS"] = BaseUrl;
         startInfo.Environment["Guildwise__PersistenceProvider"] = "InMemory";
         startInfo.Environment["Guildwise__Database__ApplyMigrationsOnStartup"] = "false";
+        startInfo.Environment["Logging__EventLog__LogLevel__Default"] = "None";
         RemovePostgresEnvironmentOverrides(startInfo);
 
         var process = Process.Start(startInfo)
@@ -255,7 +259,12 @@ public sealed class GuildwiseWebAppFixture : IAsyncLifetime, IDisposable
             return "<log unavailable>";
         }
 
-        var lines = File.ReadLines(path, Encoding.UTF8).TakeLast(40);
+        using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var lines = reader
+            .ReadToEnd()
+            .Split(Environment.NewLine)
+            .TakeLast(40);
         return string.Join(Environment.NewLine, lines);
     }
 

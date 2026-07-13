@@ -55,7 +55,29 @@ App logs are written to:
 artifacts/playwright/logs
 ```
 
-Traces and screenshots follow in slice `0021b`.
+## CI
+
+The `playwright-smoke` job runs after `build-test`.
+
+It installs Chromium with the required Linux dependencies, runs E2E tests headless and keeps using InMemory persistence through the E2E host fixture.
+
+## Fehlerdiagnose
+
+On failed Playwright runs, GitHub Actions uploads the `playwright-artifacts` artifact for 14 days.
+
+The artifact contains:
+
+* app stdout and stderr logs
+* Playwright trace
+* screenshot
+
+Successful runs do not upload Playwright artifacts.
+
+Open a local trace with:
+
+```powershell
+pwsh tests/Guildwise.E2ETests/bin/Debug/net10.0/playwright.ps1 show-trace <path-to-trace.zip>
+```
 
 ## Debugging
 
