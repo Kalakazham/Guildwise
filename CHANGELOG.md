@@ -8,32 +8,43 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
-- Added a Playwright E2E test foundation with browser navigation and initial roster, raid-team and raid-event smoke coverage, merge-blocking CI execution and failure diagnostics.
-- Added a dedicated bUnit test project and initial regression tests for raid-team Blazor components.
-- Added architecture tests for framework-free Application code, UI-free Infrastructure and persistence-free Web components.
+### Changed
+
+### Fixed
+
+## [0.5.0] - 2026-07-13
+
+### Added
+
 - Added the raid event planning foundation with Domain, Application and persistence support.
 - Added the raid event overview and detail UI.
-- Added raid event creation UX on the raid events page.
-- Added raid event lifecycle foundation with scheduled/cancelled status and update/cancel use cases.
-- Added development-only startup migration application for local Postgres-backed Web runs.
-- Added raid event edit UX for scheduled events.
-- Added raid event cancellation UX with inline confirmation.
+- Added raid event creation, editing and cancellation UX.
+- Added raid event lifecycle support with scheduled/cancelled status and update/cancel use cases.
 - Added raid event signup foundation with Domain, Application and persistence support.
 - Added raid event signup overview UI with summary, role composition and signup list display.
 - Added raid event signup management UX for setting Signed, Tentative and Declined statuses.
+- Added development-only startup migration application for local Postgres-backed Web runs.
 - Added code quality guardrails for file-size targets, known-debt baselines and CI checks.
-- Added CI coverage reporting for unit and integration tests with a downloadable merged coverage report.
+- Added solution-wide Roslyn, analyzer and build policy with warnings-as-errors enforcement.
+- Added NuGet audit, PR diff whitespace checks and Dependabot monitoring for NuGet and GitHub Actions.
+- Added an error-level format and charset CI gate.
+- Added CI coverage reporting for unit, Web component and integration tests with a downloadable merged coverage report.
+- Added architecture tests for framework-free Application code, UI-free Infrastructure and persistence-free Web components.
+- Added a dedicated bUnit test project and initial regression tests for raid-team Blazor components.
+- Added a Playwright E2E test foundation with browser navigation and initial roster, raid-team and raid-event smoke coverage, merge-blocking CI execution and failure diagnostics.
 
 ### Changed
 
-- Normalized error-level format and charset debt and added a narrow CI format error gate.
-- Hardened CI and solution-wide analyzer policy so warnings and NuGet audit findings block builds.
 - Refactored remaining large Web pages and accumulated test suites to clear code quality warnings.
 - Refactored the raid events page into focused Web components without changing behavior.
+- Removed the known-debt quality baseline after decomposing oversized Web and test files.
+- Normalized existing error-level format and charset debt.
 
 ### Fixed
 
 - Fixed known-debt refactor regressions in raid team tests and raid team management UI behavior.
+- Fixed raid event UTC normalization.
+- Fixed raid event nullable warnings.
 
 ## [0.4.0] - 2026-07-11
 
