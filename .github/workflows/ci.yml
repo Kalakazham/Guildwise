@@ -43,6 +43,9 @@ jobs:
       - name: Code quality guardrails
         run: pwsh -NoProfile -File tools/check-code-quality.ps1
 
+      - name: Format error gate
+        run: dotnet format Guildwise.sln --verify-no-changes --severity error --no-restore
+
       - name: Build
         run: dotnet build Guildwise.sln --no-restore
 

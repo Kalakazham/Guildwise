@@ -15,6 +15,7 @@ using Guildwise.Domain;
 using Guildwise.Infrastructure.Persistence;
 using Guildwise.IntegrationTests.Persistence;
 namespace Guildwise.IntegrationTests;
+
 public abstract class EfApplicationPersistenceTestBase : IAsyncLifetime
 {
     protected EfApplicationPersistenceTestBase(PostgreSqlTestFixture fixture)

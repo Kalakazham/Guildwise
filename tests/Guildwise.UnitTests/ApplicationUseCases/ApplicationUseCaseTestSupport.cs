@@ -46,6 +46,7 @@ using Guildwise.Application.RosterOverview.GetRosterOverview;
 using Guildwise.Domain;
 using static Guildwise.UnitTests.ApplicationUseCaseTestSupport;
 namespace Guildwise.UnitTests;
+
 internal static class ApplicationUseCaseTestSupport
 {
     public static T AssertSuccess<T>(Result<T> result)

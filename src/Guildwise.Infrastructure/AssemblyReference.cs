@@ -1,6 +1,6 @@
-﻿namespace Guildwise.Infrastructure;
+namespace Guildwise.Infrastructure;
 
-public static  class AssemblyReference
+public static class AssemblyReference
 {
-    
+
 }

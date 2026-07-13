@@ -1,6 +1,7 @@
 using System.Reflection;
 using Guildwise.Domain;
 namespace Guildwise.UnitTests;
+
 internal static class DomainModelTestSupport
 {
     public static Character CreateMainReadyCharacter(Player player)
