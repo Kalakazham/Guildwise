@@ -12,7 +12,7 @@
       </PackageReference>
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
       <ProjectReference Include="..\Guildwise.Application\Guildwise.Application.csproj" />
       <ProjectReference Include="..\Guildwise.Domain\Guildwise.Domain.csproj" />
     </ItemGroup>
