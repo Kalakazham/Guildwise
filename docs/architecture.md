@@ -30,6 +30,7 @@ src/
 
 tests/
   Guildwise.UnitTests
+  Guildwise.Web.Tests
   Guildwise.IntegrationTests
   Guildwise.ArchitectureTests
 ```
@@ -155,6 +156,11 @@ Test dependencies:
 Guildwise.UnitTests
   -> Guildwise.Domain
   -> Guildwise.Application
+
+Guildwise.Web.Tests
+  -> Guildwise.Web
+  -> fast bUnit component tests without a real browser or database
+  -> separate from later Playwright end-to-end tests
 
 Guildwise.IntegrationTests
   -> Guildwise.Web

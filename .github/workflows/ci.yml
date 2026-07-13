@@ -55,16 +55,19 @@ jobs:
       - name: Run unit tests with coverage
         run: dotnet test tests/Guildwise.UnitTests/Guildwise.UnitTests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/unit
 
+      - name: Run Web component tests with coverage
+        run: dotnet test tests/Guildwise.Web.Tests/Guildwise.Web.Tests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/web
+
       - name: Run integration tests with coverage
         run: dotnet test tests/Guildwise.IntegrationTests/Guildwise.IntegrationTests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/integration
 
       - name: Generate coverage report
         run: >
           dotnet tool run reportgenerator --
-          "-reports:artifacts/coverage/raw/unit/**/coverage.cobertura.xml;artifacts/coverage/raw/integration/**/coverage.cobertura.xml"
+          "-reports:artifacts/coverage/raw/unit/**/coverage.cobertura.xml;artifacts/coverage/raw/web/**/coverage.cobertura.xml;artifacts/coverage/raw/integration/**/coverage.cobertura.xml"
           "-targetdir:artifacts/coverage/report"
           "-reporttypes:Html;TextSummary;Cobertura"
-          "-assemblyfilters:+Guildwise.*;-Guildwise.UnitTests;-Guildwise.IntegrationTests;-Guildwise.ArchitectureTests"
+          "-assemblyfilters:+Guildwise.*;-Guildwise.UnitTests;-Guildwise.Web.Tests;-Guildwise.IntegrationTests;-Guildwise.ArchitectureTests"
 
       - name: Show coverage summary
         run: cat artifacts/coverage/report/Summary.txt
