@@ -51,6 +51,11 @@ public sealed class EfRepositoryTests : IAsyncLifetime
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
         Assert.Contains(
             services,
+            descriptor => descriptor.ServiceType == typeof(IRaidEventRepository)
+                && descriptor.ImplementationType == typeof(EfRaidEventRepository)
+                && descriptor.Lifetime == ServiceLifetime.Scoped);
+        Assert.Contains(
+            services,
             descriptor => descriptor.ServiceType == typeof(ITransactionRunner)
                 && descriptor.ImplementationType == typeof(EfTransactionRunner)
                 && descriptor.Lifetime == ServiceLifetime.Scoped);
@@ -227,8 +232,134 @@ public sealed class EfRepositoryTests : IAsyncLifetime
         Assert.Equal(player.Id, loadedRaidTeamMember.PlayerId);
     }
 
+    [Fact]
+    public async Task EfRaidEventRepository_Saves_Loads_And_Lists_RaidEvent()
+    {
+        var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
+        var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
+        var startTime = new DateTimeOffset(2026, 7, 13, 20, 30, 0, TimeSpan.FromHours(2));
+        var endTime = startTime.AddHours(3);
+        var raidEvent = RaidEvent.Create(
+            guild.Id,
+            raidTeam.Id,
+            UniqueName("RaidEvent"),
+            startTime,
+            endTime,
+            "Nerubar Palace",
+            RaidDifficulty.Heroic,
+            "Bring flasks.");
+
+        using (var guildContext = _fixture.CreateDbContext())
+        {
+            await new EfGuildRepository(guildContext).AddAsync(guild);
+        }
+
+        using (var arrangeContext = _fixture.CreateDbContext())
+        {
+            await new EfRaidEventRepository(arrangeContext).AddAsync(raidEvent);
+        }
+
+        using var assertContext = _fixture.CreateDbContext();
+        var repository = new EfRaidEventRepository(assertContext);
+        var loaded = await repository.GetByIdAsync(raidEvent.Id);
+        var guildEvents = await repository.ListForGuildAsync(guild.Id);
+        var raidTeamEvents = await repository.ListForRaidTeamAsync(raidTeam.Id);
+
+        Assert.NotNull(loaded);
+        Assert.Equal(raidEvent.Id, loaded.Id);
+        Assert.Equal(guild.Id, loaded.GuildId);
+        Assert.Equal(raidTeam.Id, loaded.RaidTeamId);
+        Assert.Equal(raidEvent.Title, loaded.Title);
+        Assert.Equal(TimeSpan.Zero, loaded.StartTime.Offset);
+        AssertDateTimeOffsetCloseTo(startTime.ToUniversalTime(), loaded.StartTime);
+        Assert.NotNull(loaded.EndTime);
+        Assert.Equal(TimeSpan.Zero, loaded.EndTime.Value.Offset);
+        AssertDateTimeOffsetCloseTo(endTime.ToUniversalTime(), loaded.EndTime.Value);
+        Assert.Equal("Nerubar Palace", loaded.InstanceName);
+        Assert.Equal(RaidDifficulty.Heroic, loaded.Difficulty);
+        Assert.Equal(RaidEventStatus.Scheduled, loaded.Status);
+        Assert.Equal("Bring flasks.", loaded.Notes);
+        Assert.Equal(raidEvent.Id, Assert.Single(guildEvents).Id);
+        Assert.Equal(raidEvent.Id, Assert.Single(raidTeamEvents).Id);
+
+        using (var updateContext = _fixture.CreateDbContext())
+        {
+            var eventToCancel = await new EfRaidEventRepository(updateContext).GetByIdAsync(raidEvent.Id);
+            Assert.NotNull(eventToCancel);
+            eventToCancel.Cancel();
+            await new EfRaidEventRepository(updateContext).SaveChangesAsync();
+        }
+
+        using var statusAssertContext = _fixture.CreateDbContext();
+        var cancelled = await new EfRaidEventRepository(statusAssertContext).GetByIdAsync(raidEvent.Id);
+        Assert.NotNull(cancelled);
+        Assert.Equal(RaidEventStatus.Cancelled, cancelled.Status);
+    }
+
+    [Fact]
+    public async Task EfRaidEventRepository_Persists_RaidEvent_Signups()
+    {
+        var player = Player.Create(UniqueName("Player"));
+        var guild = Guild.Create(UniqueName("Guild"), "EU", "Draenor");
+        guild.AddMember(player, GuildRank.Member);
+        var raidTeam = guild.CreateRaidTeam(UniqueName("RaidTeam"));
+        var raidEvent = RaidEvent.Create(
+            guild.Id,
+            raidTeam.Id,
+            UniqueName("RaidEvent"),
+            DateTimeOffset.UtcNow.AddDays(1),
+            null,
+            "Nerubar Palace",
+            RaidDifficulty.Normal,
+            null);
+        raidEvent.SetSignup(player.Id, RaidEventSignupStatus.Signed);
+
+        using (var playerContext = _fixture.CreateDbContext())
+        {
+            await new EfPlayerRepository(playerContext).AddAsync(player);
+        }
+
+        using (var guildContext = _fixture.CreateDbContext())
+        {
+            await new EfGuildRepository(guildContext).AddAsync(guild);
+        }
+
+        using (var arrangeContext = _fixture.CreateDbContext())
+        {
+            await new EfRaidEventRepository(arrangeContext).AddAsync(raidEvent);
+        }
+
+        using (var assertContext = _fixture.CreateDbContext())
+        {
+            var loaded = await new EfRaidEventRepository(assertContext).GetByIdAsync(raidEvent.Id);
+
+            Assert.NotNull(loaded);
+            var signup = Assert.Single(loaded.Signups);
+            Assert.Equal(raidEvent.Id, signup.RaidEventId);
+            Assert.Equal(player.Id, signup.PlayerId);
+            Assert.Equal(RaidEventSignupStatus.Signed, signup.Status);
+        }
+
+        using (var updateContext = _fixture.CreateDbContext())
+        {
+            var loaded = await new EfRaidEventRepository(updateContext).GetByIdAsync(raidEvent.Id);
+            Assert.NotNull(loaded);
+            loaded.SetSignup(player.Id, RaidEventSignupStatus.Tentative);
+            await new EfRaidEventRepository(updateContext).SaveChangesAsync();
+        }
+
+        using var statusAssertContext = _fixture.CreateDbContext();
+        var updated = await new EfRaidEventRepository(statusAssertContext).GetByIdAsync(raidEvent.Id);
+        Assert.NotNull(updated);
+        var updatedSignup = Assert.Single(updated.Signups);
+        Assert.Equal(RaidEventSignupStatus.Tentative, updatedSignup.Status);
+    }
+
     private static string UniqueName(string prefix)
         => $"{prefix}{Guid.NewGuid():N}";
+
+    private static void AssertDateTimeOffsetCloseTo(DateTimeOffset expected, DateTimeOffset actual)
+        => Assert.InRange((actual - expected).Duration(), TimeSpan.Zero, TimeSpan.FromMilliseconds(1));
 
     private sealed class ThrowOnSecondSaveChangesInterceptor : SaveChangesInterceptor
     {

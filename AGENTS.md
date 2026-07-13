@@ -32,6 +32,17 @@ The current goal is to build a useful guild and raid roster management tool befo
   - Contains unit tests for Domain and Application.
   - Must not use real databases, network calls or web hosts.
 
+- `tests/Guildwise.Web.Tests`
+  - Contains fast bUnit component tests for Blazor components.
+  - Must not use a real browser, real database or Testcontainers.
+
+- `tests/Guildwise.E2ETests`
+  - Contains Playwright browser smoke tests for the started Blazor Web app.
+  - Uses real navigation, Blazor interactivity and cross-component UI flows.
+  - Must not change an existing developer database.
+  - The current E2E host forces InMemory persistence.
+  - Must not call external APIs.
+
 - `tests/Guildwise.IntegrationTests`
   - Contains integration tests for endpoints, persistence and application wiring.
   - May reference Web, Application and Infrastructure.
@@ -136,6 +147,14 @@ dotnet tool run dotnet-ef database update \
   --startup-project ./src/Guildwise.Infrastructure/Guildwise.Infrastructure.csproj \
   --context GuildwiseDbContext
 ```
+
+## Development Startup Migrations
+
+The Web app may apply pending EF Core migrations automatically during local Development startup when Postgres persistence is configured.
+
+This must stay Development-only. Do not enable automatic startup migrations for Production or other non-development environments.
+
+Use EF Core `MigrateAsync()` for this flow. Do not use `EnsureCreated()`.
 
 ## Tooling Rules
 
@@ -244,14 +263,52 @@ WoWAudit, Blizzard WoW API, Raider.IO and Warcraft Logs are planned future sourc
 
 - Add or update tests for meaningful domain or application behavior.
 - Unit tests should be fast and isolated.
+- Web component tests should use bUnit for local component logic, conditional rendering, parameters and callbacks.
+- bUnit tests do not replace browser or end-to-end tests; Playwright tests are tracked separately.
+- Run Web component tests locally with `dotnet test tests/Guildwise.Web.Tests/Guildwise.Web.Tests.csproj`.
+- Playwright E2E tests live in `tests/Guildwise.E2ETests`.
+- The current E2E host uses InMemory persistence and must not touch a developer PostgreSQL database.
+- Run local E2E tests with `dotnet test tests/Guildwise.E2ETests/Guildwise.E2ETests.csproj`.
+- See `docs/testing/ui-tests.md` for local Playwright setup and execution.
+- Playwright smoke tests run in a separate merge-blocking CI job and remain outside coverage.
+- The Playwright CI job installs Chromium and uploads app logs, trace and screenshot as `playwright-artifacts` on failure.
+- New full browser flows should use the existing Playwright diagnostic support.
+- Playwright tests must not use developer databases or external APIs.
 - Integration tests should verify that important flows work through real application wiring.
 - Architecture tests should enforce layer boundaries.
+- CI runs architecture tests without coverage, and runs unit, Web component and integration tests with coverage collection.
+- CI merges unit, Web component and integration coverage into HTML, text and Cobertura reports and uploads them as the `coverage-report` artifact for 14 days.
+- The same project-specific test commands and local `reportgenerator` tool can be used to reproduce coverage locally.
+- Coverage currently has no hard minimum threshold; low coverage must not be hidden with unjustified product-code exclusions.
+- Coverage is a visibility signal and does not replace meaningful behavior tests.
+- Add bUnit coverage for new relevant Blazor component logic.
 - After changes, run:
 
 ```bash
 dotnet build
 dotnet test
 ```
+
+## Code Quality Guardrails
+
+Guildwise uses `tools/check-code-quality.ps1` to enforce lightweight file-size guardrails and known-debt baselines.
+
+Solution-wide build and analyzer policy lives in `Directory.Build.props`.
+
+- Nullable reference types, implicit usings, .NET analyzers and `AnalysisLevel` are configured centrally.
+- Build, compiler, Roslyn analyzer and code-analysis warnings are treated as errors.
+- NuGet Audit checks direct and transitive dependencies and blocks known vulnerabilities from `moderate` severity upward.
+- CI runs `dotnet format Guildwise.sln --verify-no-changes --severity error --no-restore` to block only error-level format and charset issues.
+- `EnforceCodeStyleInBuild` and broader `dotnet format` style gates are not enabled yet.
+- Pull requests are checked for whitespace errors in the actual PR diff.
+- Dependabot monitors NuGet and GitHub Actions dependencies weekly against `dev`.
+
+- Run `pwsh -NoProfile -File tools/check-code-quality.ps1` before completing implementation work.
+- Do not create new large files that violate the current gates.
+- Do not let known-debt files grow beyond `tools/code-quality-baseline.json`.
+- Do not raise baseline limits without explicit user approval.
+- Do not bypass quality gates to land a feature.
+- If a feature would grow an already large file, refactor first or provide a focused refactor plan.
 
 ## Changelog Rules
 

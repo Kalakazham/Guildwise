@@ -15,6 +15,16 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment()
+    && app.Configuration.GetValue("Guildwise:Database:ApplyMigrationsOnStartup", true)
+    && string.Equals(
+        app.Configuration["Guildwise:PersistenceProvider"],
+        "Postgres",
+        StringComparison.OrdinalIgnoreCase))
+{
+    await app.Services.ApplyGuildwiseDatabaseMigrationsAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

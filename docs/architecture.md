@@ -30,6 +30,8 @@ src/
 
 tests/
   Guildwise.UnitTests
+  Guildwise.Web.Tests
+  Guildwise.E2ETests
   Guildwise.IntegrationTests
   Guildwise.ArchitectureTests
 ```
@@ -156,6 +158,17 @@ Guildwise.UnitTests
   -> Guildwise.Domain
   -> Guildwise.Application
 
+Guildwise.Web.Tests
+  -> Guildwise.Web
+  -> fast bUnit component tests without a real browser or database
+  -> separate from later Playwright end-to-end tests
+
+Guildwise.E2ETests
+  -> real Chromium browser smoke and E2E tests
+  -> starts a real Guildwise Web app
+  -> uses InMemory persistence in the first test setup
+  -> separate from bUnit component tests and persistence integration tests
+
 Guildwise.IntegrationTests
   -> Guildwise.Web
   -> Guildwise.Application
@@ -234,6 +247,7 @@ Allowed repository interfaces:
 ```text
 IGuildRepository
 IPlayerRepository
+IRaidEventRepository
 ```
 
 Do not create repositories for:
@@ -249,6 +263,7 @@ Reason:
 
 * Characters are managed through `Player`.
 * RaidTeams and GuildMembers are managed through `Guild`.
+* RaidEvents are managed through `RaidEvent` because raid events are their own aggregate root.
 * Creating repositories for child entities would weaken aggregate boundaries and make it easier to bypass domain rules.
 
 ### Migrations

@@ -1,0 +1,172 @@
+@page "/raid-events"
+@rendermode InteractiveServer
+
+@using Guildwise.Application.Common.Results
+@using Guildwise.Application.Contracts.Guilds
+@using Guildwise.Application.Contracts.Players
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Application.Contracts.RaidTeams
+@using Guildwise.Application.Guilds.ListGuilds
+@using Guildwise.Application.Players.ListPlayers
+@using Guildwise.Application.RaidEvents.CancelRaidEvent
+@using Guildwise.Application.RaidEvents.CreateRaidEvent
+@using Guildwise.Application.RaidEvents.ListRaidEventSignups
+@using Guildwise.Application.RaidEvents.ListRaidEvents
+@using Guildwise.Application.RaidEvents.SetRaidEventSignup
+@using Guildwise.Application.RaidEvents.UpdateRaidEvent
+@using Guildwise.Domain
+@using Guildwise.Web.Components.Pages.RaidEventComponents
+@inject CancelRaidEventHandler CancelRaidEventHandler
+@inject CreateRaidEventHandler CreateRaidEventHandler
+@inject ListRaidEventSignupsHandler ListRaidEventSignupsHandler
+@inject ListGuildsHandler ListGuildsHandler
+@inject ListPlayersHandler ListPlayersHandler
+@inject ListRaidEventsHandler ListRaidEventsHandler
+@inject SetRaidEventSignupHandler SetRaidEventSignupHandler
+@inject UpdateRaidEventHandler UpdateRaidEventHandler
+
+<PageTitle>Raid Events</PageTitle>
+
+<main class="raid-events-page">
+    <PageHeader
+        Eyebrow="Guildwise raid planning"
+        Title="Raid Events"
+        Subtitle="Review planned raid dates, raid team ownership and guild context from the manual event foundation in Guildwise.">
+        <Actions>
+            <a class="event-action event-action--secondary" href="/raid-teams">Raid Teams</a>
+            <button type="button" class="event-action" @onclick="() => LoadRaidEventsAsync()">Refresh</button>
+        </Actions>
+    </PageHeader>
+
+    @if (isLoading)
+    {
+        <LoadingState Title="Loading raid events" Message="Collecting event, guild and raid team context." />
+    }
+    else if (!string.IsNullOrWhiteSpace(loadFailure))
+    {
+        <ContentPanel Title="Raid events unavailable">
+            <EmptyState
+                Title="Raid event data could not be loaded."
+                Message="@loadFailure">
+                <Actions>
+                    <button type="button" class="event-action" @onclick="() => LoadRaidEventsAsync()">Try again</button>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else if (guilds.Count == 0)
+    {
+        <ContentPanel Title="Guild Context">
+            <EmptyState
+                Title="No guilds yet."
+                Message="Create a guild and raid team through setup before planning raid events.">
+                <Actions>
+                    <a class="event-action" href="/roster-setup">Open roster setup</a>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else if (!HasAnyRaidTeams)
+    {
+        <ContentPanel Title="Raid Team Context">
+            <EmptyState
+                Title="No raid teams yet."
+                Message="Raid events are assigned to raid teams. Create a raid team before reviewing planned events.">
+                <Actions>
+                    <a class="event-action" href="/raid-teams">Open raid teams</a>
+                    <a class="event-action event-action--secondary" href="/roster-setup">Open roster setup</a>
+                </Actions>
+            </EmptyState>
+        </ContentPanel>
+    }
+    else
+    {
+        var selectedEvent = SelectedEvent;
+
+        <RaidEventSummaryCards
+            RaidEvents="raidEvents"
+            GuildCount="guilds.Count"
+            RaidTeamsWithEventsCount="RaidTeamsWithEventsCount" />
+
+        <section class="event-management-grid">
+            <div class="event-management-sidebar">
+                <ContentPanel Title="Create Raid Event" Class="event-create-panel">
+                    <RaidEventCreateForm RaidTeamOptions="RaidTeamOptions" OnSubmit="CreateRaidEventAsync" />
+                </ContentPanel>
+
+                <ContentPanel Title="Raid Event Overview" Class="event-overview-panel">
+                    @if (raidEvents.Count == 0)
+                    {
+                        <EmptyState
+                            Title="No raid events yet."
+                            Message="Create the first raid event to start planning raid dates for an existing raid team." />
+                    }
+                    else
+                    {
+                        <RaidEventList
+                            Events="OrderedRaidEvents"
+                            Guilds="guilds"
+                            SelectedRaidEventId="selectedRaidEventId"
+                            OnSelect="SelectEventAsync" />
+                    }
+                </ContentPanel>
+            </div>
+
+            <ContentPanel Title="Event Detail" Class="event-detail-panel">
+                @if (selectedEvent is null)
+                {
+                    <EmptyState
+                        Title="No raid event selected."
+                        Message="Create a raid event or choose one from the overview to inspect its details." />
+                }
+                else
+                {
+                    var guild = FindGuild(selectedEvent);
+                    var raidTeam = FindRaidTeam(selectedEvent);
+
+                    <RaidEventDetail
+                        Event="selectedEvent"
+                        Guild="guild"
+                        RaidTeam="raidTeam"
+                        IsEditing="isEditingSelectedEvent"
+                        ShowBody="@(!isEditingSelectedEvent)"
+                        OnStartEdit="StartEdit"
+                        OnCancel="CancelRaidEventAsync" />
+
+                    @if (isEditingSelectedEvent)
+                    {
+                        <RaidEventEditForm
+                            Event="selectedEvent"
+                            RaidTeamOptions="RaidTeamOptions"
+                            OnSubmit="UpdateRaidEventAsync"
+                            OnDiscard="DiscardEditChanges" />
+                    }
+                    else
+                    {
+                        <section class="event-signup-panel">
+                            <RaidEventSignupOverview
+                                Event="selectedEvent"
+                                Guild="guild"
+                                Signups="selectedEventSignups"
+                                Loading="signupsLoading"
+                                LoadFailure="@signupLoadFailure"
+                                OnRetry="LoadSelectedEventSignupsAsync" />
+
+                            @if (!signupsLoading
+                                && string.IsNullOrWhiteSpace(signupLoadFailure)
+                                && loadedSignupRaidEventId == selectedEvent.Id)
+                            {
+                                <RaidEventSignupManagement
+                                    Event="selectedEvent"
+                                    Guild="guild"
+                                    Players="players"
+                                    Signups="selectedEventSignups"
+                                    OnSetStatus="SetSignupStatusAsync" />
+                            }
+                        </section>
+                    }
+                }
+            </ContentPanel>
+        </section>
+    }
+</main>

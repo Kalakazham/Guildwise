@@ -22,6 +22,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check pull request diff
+        if: github.event_name == 'pull_request'
+        run: git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -34,8 +40,85 @@ jobs:
       - name: Restore local tools
         run: dotnet tool restore
 
+      - name: Format error gate
+        run: dotnet format Guildwise.sln --verify-no-changes --severity error --no-restore
+
+      - name: Code quality guardrails
+        run: pwsh -NoProfile -File tools/check-code-quality.ps1
+
       - name: Build
         run: dotnet build Guildwise.sln --no-restore
 
-      - name: Test
-        run: dotnet test Guildwise.sln --no-build
+      - name: Run architecture tests
+        run: dotnet test tests/Guildwise.ArchitectureTests/Guildwise.ArchitectureTests.csproj --no-build --no-restore
+
+      - name: Run unit tests with coverage
+        run: dotnet test tests/Guildwise.UnitTests/Guildwise.UnitTests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/unit
+
+      - name: Run Web component tests with coverage
+        run: dotnet test tests/Guildwise.Web.Tests/Guildwise.Web.Tests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/web
+
+      - name: Run integration tests with coverage
+        run: dotnet test tests/Guildwise.IntegrationTests/Guildwise.IntegrationTests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/integration
+
+      - name: Generate coverage report
+        run: >
+          dotnet tool run reportgenerator --
+          "-reports:artifacts/coverage/raw/unit/**/coverage.cobertura.xml;artifacts/coverage/raw/web/**/coverage.cobertura.xml;artifacts/coverage/raw/integration/**/coverage.cobertura.xml"
+          "-targetdir:artifacts/coverage/report"
+          "-reporttypes:Html;TextSummary;Cobertura"
+          "-assemblyfilters:+Guildwise.*;-Guildwise.UnitTests;-Guildwise.Web.Tests;-Guildwise.IntegrationTests;-Guildwise.ArchitectureTests"
+
+      - name: Show coverage summary
+        run: cat artifacts/coverage/report/Summary.txt
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: artifacts/coverage/report
+          if-no-files-found: error
+          retention-days: 14
+
+  playwright-smoke:
+    name: Playwright smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-test
+    env:
+      BROWSER: chromium
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore packages
+        run: dotnet restore Guildwise.sln
+
+      - name: Build Web
+        run: dotnet build src/Guildwise.Web/Guildwise.Web.csproj --no-restore
+
+      - name: Build E2E tests
+        run: dotnet build tests/Guildwise.E2ETests/Guildwise.E2ETests.csproj --no-restore
+
+      - name: Install Chromium with dependencies
+        run: pwsh tests/Guildwise.E2ETests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        run: dotnet test tests/Guildwise.E2ETests/Guildwise.E2ETests.csproj --no-build --no-restore
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: artifacts/playwright
+          if-no-files-found: warn
+          retention-days: 14

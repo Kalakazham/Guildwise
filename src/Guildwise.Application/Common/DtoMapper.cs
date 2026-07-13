@@ -2,6 +2,7 @@ using Guildwise.Application.Contracts.Characters;
 using Guildwise.Application.Contracts.GuildMembers;
 using Guildwise.Application.Contracts.Guilds;
 using Guildwise.Application.Contracts.Players;
+using Guildwise.Application.Contracts.RaidEvents;
 using Guildwise.Application.Contracts.RaidTeams;
 using Guildwise.Domain;
 
@@ -42,6 +43,44 @@ internal static class DtoMapper
             raidTeam.GuildId,
             raidTeam.Name,
             raidTeam.Members.Select(ToDto).ToList());
+
+    internal static RaidEventDto ToDto(RaidEvent raidEvent)
+        => new(
+            raidEvent.Id,
+            raidEvent.GuildId,
+            raidEvent.RaidTeamId,
+            raidEvent.Title,
+            raidEvent.StartTime,
+            raidEvent.EndTime,
+            raidEvent.InstanceName,
+            raidEvent.Difficulty,
+            raidEvent.Status,
+            raidEvent.Notes);
+
+    internal static RaidEventSignupDto ToDto(
+        RaidEvent raidEvent,
+        RaidEventSignup signup,
+        Player player,
+        GuildMember? guildMember)
+    {
+        var mainCharacter = player.MainCharacterId.HasValue
+            ? player.Characters.FirstOrDefault(character => character.Id == player.MainCharacterId.Value)
+            : null;
+
+        return new RaidEventSignupDto(
+            raidEvent.Id,
+            player.Id,
+            player.DisplayName,
+            signup.Status,
+            mainCharacter?.Id,
+            mainCharacter?.Name,
+            mainCharacter?.CharacterClass,
+            mainCharacter?.Specialization,
+            mainCharacter?.Role,
+            mainCharacter is not null,
+            guildMember?.Rank,
+            guildMember?.AdditionalRoles.ToList() ?? []);
+    }
 
     internal static GuildMemberDto ToDto(GuildMember member)
         => new(

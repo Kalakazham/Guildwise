@@ -1,0 +1,238 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.Guilds
+@using Guildwise.Application.Contracts.Players
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Domain
+
+<div class="event-signup-management">
+    <div class="event-signup-management__header">
+        <div>
+            <h4>Signup Management</h4>
+            <p>Set or change stored signup responses for guild members.</p>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="event-status-message event-status-message--@messageStatus" role="status">
+                @message
+            </div>
+        }
+    </div>
+
+    @if (Event is null)
+    {
+        <EmptyState
+            Title="No raid event selected."
+            Message="Choose a raid event before managing signups." />
+    }
+    else if (Guild is null)
+    {
+        <EmptyState
+            Title="Signup management unavailable."
+            Message="Guild context for the selected event could not be resolved." />
+    }
+    else
+    {
+        @if (Event.Status == RaidEventStatus.Cancelled)
+        {
+            <span class="event-signup-note">This event is cancelled, so signup actions are not normally available.</span>
+        }
+
+        var rows = GetSignupManagementRows();
+        @if (rows.Count == 0)
+        {
+            <EmptyState
+                Title="No available guild members."
+                Message="There are no guild members available for signup management in this event context." />
+        }
+        else
+        {
+            <div class="event-signup-management-list" role="list" aria-label="Signup management">
+                @foreach (var row in rows)
+                {
+                    <div class="@GetSignupManagementRowClass(row)" role="listitem">
+                        <div class="event-signup-row__identity">
+                            <strong>@row.PlayerDisplayName</strong>
+                            <span>@row.MainCharacterName</span>
+                        </div>
+                        <div class="event-signup-row__badges">
+                            <CharacterClassBadge Value="row.CharacterClass" />
+                            <CharacterRoleBadge Value="row.Role" />
+                            <GuildRankBadge Value="row.GuildRank" />
+                            @if (row.AdditionalRoles.Count == 0)
+                            {
+                                <span class="event-signup-muted">No additional roles</span>
+                            }
+                            else
+                            {
+                                @foreach (var role in row.AdditionalRoles)
+                                {
+                                    <GuildRoleBadge Value="role" />
+                                }
+                            }
+                        </div>
+                        <div class="event-signup-management-row__status">
+                            <span class="@RaidEventUiText.GetSignupStatusClass(row.CurrentStatus)">
+                                @RaidEventUiText.FormatSignupStatus(row.CurrentStatus)
+                            </span>
+                            @if (!row.HasPlayerContext)
+                            {
+                                <span class="event-signup-muted">Player data unavailable</span>
+                            }
+                        </div>
+                        <div class="event-signup-actions">
+                            @foreach (var status in SignupStatusOptions)
+                            {
+                                <button
+                                    type="button"
+                                    class="@GetSignupActionClass(row, status)"
+                                    disabled="@IsSignupActionDisabled(row, status)"
+                                    @onclick="() => SetStatusAsync(row, status)">
+                                    @(IsSignupActionInProgress(row, status) ? "Saving..." : RaidEventUiText.FormatSignupStatus(status))
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private static readonly IReadOnlyList<RaidEventSignupStatus> SignupStatusOptions =
+    [
+        RaidEventSignupStatus.Signed,
+        RaidEventSignupStatus.Tentative,
+        RaidEventSignupStatus.Declined
+    ];
+
+    private Guid? actionPlayerId;
+    private RaidEventSignupStatus? actionTargetStatus;
+    private string? message;
+    private string messageStatus = "success";
+
+    [Parameter]
+    public RaidEventDto? Event { get; set; }
+
+    [Parameter]
+    public GuildDto? Guild { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<PlayerDto> Players { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<RaidEventSignupDto> Signups { get; set; } = [];
+
+    [Parameter]
+    public Func<SignupStatusChangeRequest, Task<RaidEventActionResult>>? OnSetStatus { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (actionPlayerId.HasValue && Event?.Status == RaidEventStatus.Cancelled)
+        {
+            actionPlayerId = null;
+            actionTargetStatus = null;
+        }
+    }
+
+    private async Task SetStatusAsync(SignupManagementRow row, RaidEventSignupStatus status)
+    {
+        if (Event is null || OnSetStatus is null || actionPlayerId.HasValue)
+        {
+            return;
+        }
+
+        actionPlayerId = row.PlayerId;
+        actionTargetStatus = status;
+        message = null;
+
+        try
+        {
+            var request = new SignupStatusChangeRequest(Event.Id, row.PlayerId, status, row.CurrentStatus);
+            var result = await OnSetStatus(request);
+            message = result.Message;
+            messageStatus = result.MessageStatus;
+        }
+        finally
+        {
+            actionPlayerId = null;
+            actionTargetStatus = null;
+        }
+    }
+
+    private IReadOnlyList<SignupManagementRow> GetSignupManagementRows()
+    {
+        if (Guild is null)
+        {
+            return [];
+        }
+
+        var signupsByPlayerId = Signups.ToDictionary(signup => signup.PlayerId);
+
+        return Guild.Members
+            .Select(member =>
+            {
+                var player = Players.FirstOrDefault(candidate => candidate.Id == member.PlayerId);
+                var signup = signupsByPlayerId.GetValueOrDefault(member.PlayerId);
+                var mainCharacter = player?.MainCharacterId.HasValue == true
+                    ? player.Characters.FirstOrDefault(character => character.Id == player.MainCharacterId.Value)
+                    : null;
+
+                return new SignupManagementRow(
+                    member.PlayerId,
+                    player?.DisplayName ?? $"Unknown player {member.PlayerId:N}",
+                    mainCharacter?.Name ?? "No main character",
+                    mainCharacter is not null,
+                    mainCharacter?.CharacterClass,
+                    mainCharacter?.Role,
+                    member.Rank,
+                    member.AdditionalRoles,
+                    signup?.Status,
+                    player is not null);
+            })
+            .OrderBy(row => row.PlayerDisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(row => row.PlayerId)
+            .ToList();
+    }
+
+    private string GetSignupManagementRowClass(SignupManagementRow row)
+    {
+        var classes = "event-signup-management-row";
+        if (Event?.Status == RaidEventStatus.Cancelled)
+        {
+            classes += " event-signup-management-row--disabled";
+        }
+
+        if (!row.HasPlayerContext)
+        {
+            classes += " event-signup-management-row--unavailable";
+        }
+
+        if (row.PlayerId == actionPlayerId)
+        {
+            classes += " event-signup-management-row--busy";
+        }
+
+        return classes;
+    }
+
+    private bool IsSignupActionDisabled(SignupManagementRow row, RaidEventSignupStatus status)
+        => Event?.Status != RaidEventStatus.Scheduled
+            || !row.HasPlayerContext
+            || actionPlayerId.HasValue
+            || row.CurrentStatus == status;
+
+    private bool IsSignupActionInProgress(SignupManagementRow row, RaidEventSignupStatus status)
+        => actionPlayerId == row.PlayerId && actionTargetStatus == status;
+
+    private static string GetSignupActionClass(SignupManagementRow row, RaidEventSignupStatus status)
+    {
+        var classes = "event-signup-action";
+        if (row.CurrentStatus == status)
+        {
+            classes += " event-signup-action--current";
+        }
+
+        return classes;
+    }
+}

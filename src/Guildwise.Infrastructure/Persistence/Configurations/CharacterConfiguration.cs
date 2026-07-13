@@ -53,12 +53,12 @@ public sealed class CharacterConfiguration : IEntityTypeConfiguration<Character>
             .IsRequired();
 
         builder.HasIndex(character => new
-            {
-                character.PlayerId,
-                character.Region,
-                character.Realm,
-                character.Name
-            })
+        {
+            character.PlayerId,
+            character.Region,
+            character.Realm,
+            character.Name
+        })
             .IsUnique();
     }
 }

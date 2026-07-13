@@ -163,6 +163,99 @@ namespace Guildwise.Infrastructure.Persistence.Migrations
                     b.ToTable("players", (string)null);
                 });
 
+            modelBuilder.Entity("Guildwise.Domain.RaidEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("difficulty");
+
+                    b.Property<DateTimeOffset?>("EndTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_time");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<string>("InstanceName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("instance_name");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("RaidTeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("raid_team_id");
+
+                    b.Property<DateTimeOffset>("StartTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_time");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("RaidTeamId");
+
+                    b.HasIndex("StartTime");
+
+                    b.ToTable("raid_events", (string)null);
+                });
+
+            modelBuilder.Entity("Guildwise.Domain.RaidEventSignup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<Guid>("RaidEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("raid_event_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("RaidEventId", "PlayerId")
+                        .IsUnique();
+
+                    b.ToTable("raid_event_signups", (string)null);
+                });
+
             modelBuilder.Entity("Guildwise.Domain.RaidTeam", b =>
                 {
                     b.Property<Guid>("Id")
@@ -243,6 +336,36 @@ namespace Guildwise.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 
+            modelBuilder.Entity("Guildwise.Domain.RaidEvent", b =>
+                {
+                    b.HasOne("Guildwise.Domain.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Guildwise.Domain.RaidTeam", null)
+                        .WithMany()
+                        .HasForeignKey("RaidTeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Guildwise.Domain.RaidEventSignup", b =>
+                {
+                    b.HasOne("Guildwise.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Guildwise.Domain.RaidEvent", null)
+                        .WithMany("Signups")
+                        .HasForeignKey("RaidEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Guildwise.Domain.RaidTeam", b =>
                 {
                     b.HasOne("Guildwise.Domain.Guild", null)
@@ -277,6 +400,11 @@ namespace Guildwise.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Guildwise.Domain.Player", b =>
                 {
                     b.Navigation("Characters");
+                });
+
+            modelBuilder.Entity("Guildwise.Domain.RaidEvent", b =>
+                {
+                    b.Navigation("Signups");
                 });
 
             modelBuilder.Entity("Guildwise.Domain.RaidTeam", b =>

@@ -14,6 +14,8 @@ public sealed class GuildwiseDbContext : DbContext
 
     public DbSet<Player> Players => Set<Player>();
 
+    public DbSet<RaidEvent> RaidEvents => Set<RaidEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

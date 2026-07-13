@@ -1,0 +1,91 @@
+@namespace Guildwise.Web.Components.Pages.RaidEventComponents
+@using Guildwise.Application.Contracts.Guilds
+@using Guildwise.Application.Contracts.RaidEvents
+@using Guildwise.Application.Contracts.RaidTeams
+@using Guildwise.Domain
+
+@if (Event is not null)
+{
+    <div class="event-detail-header">
+        <div>
+            <RaidTeamBadge Name="@RaidEventUiText.GetRaidTeamName(RaidTeam)" />
+            <h2>@Event.Title</h2>
+            <p>@RaidEventUiText.GetGuildContext(Guild)</p>
+        </div>
+        <div class="event-detail-header__meta">
+            <span class="@RaidEventUiText.GetEventStatusClass(Event.Status, large: true)">@RaidEventUiText.FormatEventStatus(Event.Status)</span>
+            <span class="event-difficulty event-difficulty--large">@RosterDisplayText.RaidDifficulty(Event.Difficulty)</span>
+            @if (!IsEditing && Event.Status == RaidEventStatus.Scheduled)
+            {
+                <button type="button" class="event-action event-action--secondary" @onclick="() => OnStartEdit.InvokeAsync(Event)">
+                    Edit
+                </button>
+            }
+            @if (!IsEditing)
+            {
+                <RaidEventCancelPanel Event="Event" OnCancel="OnCancel" />
+            }
+        </div>
+    </div>
+
+    @if (ShowBody)
+    {
+        <div class="event-detail-grid">
+            <div class="event-detail-card">
+                <span>Raid team</span>
+                <strong>@RaidEventUiText.GetRaidTeamName(RaidTeam)</strong>
+                <small>@RaidEventUiText.GetGuildName(Guild)</small>
+            </div>
+            <div class="event-detail-card">
+                <span>Guild context</span>
+                <strong>@RaidEventUiText.GetGuildName(Guild)</strong>
+                <small>@RaidEventUiText.GetGuildRealm(Guild)</small>
+            </div>
+            <div class="event-detail-card">
+                <span>Start</span>
+                <strong>@RaidEventUiText.FormatDateTime(Event.StartTime)</strong>
+            </div>
+            <div class="event-detail-card">
+                <span>End</span>
+                <strong>@RaidEventUiText.FormatOptionalDateTime(Event.EndTime)</strong>
+                <small>Duration: @RaidEventUiText.FormatDuration(Event)</small>
+            </div>
+            <div class="event-detail-card">
+                <span>Instance</span>
+                <strong>@Event.InstanceName</strong>
+            </div>
+            <div class="event-detail-card">
+                <span>Difficulty</span>
+                <strong>@RosterDisplayText.RaidDifficulty(Event.Difficulty)</strong>
+            </div>
+        </div>
+
+        <div class="event-notes-panel">
+            <h3>Notes</h3>
+            <p>@(string.IsNullOrWhiteSpace(Event.Notes) ? "No notes added." : Event.Notes)</p>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public RaidEventDto? Event { get; set; }
+
+    [Parameter]
+    public GuildDto? Guild { get; set; }
+
+    [Parameter]
+    public RaidTeamDto? RaidTeam { get; set; }
+
+    [Parameter]
+    public bool IsEditing { get; set; }
+
+    [Parameter]
+    public bool ShowBody { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<RaidEventDto> OnStartEdit { get; set; }
+
+    [Parameter]
+    public Func<RaidEventDto, Task<RaidEventActionResult>>? OnCancel { get; set; }
+}

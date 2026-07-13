@@ -17,6 +17,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IGuildRepository, InMemoryGuildRepository>();
         services.AddSingleton<IPlayerRepository, InMemoryPlayerRepository>();
+        services.AddSingleton<IRaidEventRepository, InMemoryRaidEventRepository>();
         services.AddSingleton<ITransactionRunner, InMemoryTransactionRunner>();
 
         return services;
@@ -39,6 +40,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
         services.AddScoped<IGuildRepository, EfGuildRepository>();
         services.AddScoped<IPlayerRepository, EfPlayerRepository>();
+        services.AddScoped<IRaidEventRepository, EfRaidEventRepository>();
         services.AddScoped<ITransactionRunner, EfTransactionRunner>();
 
         return services;

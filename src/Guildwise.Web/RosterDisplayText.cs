@@ -65,6 +65,16 @@ internal static partial class RosterDisplayText
             _ => SplitWords(role.ToString())
         };
 
+    internal static string RaidDifficulty(RaidDifficulty difficulty)
+        => difficulty switch
+        {
+            Domain.RaidDifficulty.LookingForRaid => "Looking for Raid",
+            Domain.RaidDifficulty.Normal => "Normal",
+            Domain.RaidDifficulty.Heroic => "Heroic",
+            Domain.RaidDifficulty.Mythic => "Mythic",
+            _ => SplitWords(difficulty.ToString())
+        };
+
     private static string SplitWords(string value)
         => WordBoundaryRegex().Replace(value, " ");
 
