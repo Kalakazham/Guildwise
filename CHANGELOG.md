@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Added architecture tests for framework-free Application code, UI-free Infrastructure and persistence-free Web components.
 - Added the raid event planning foundation with Domain, Application and persistence support.
 - Added the raid event overview and detail UI.
 - Added raid event creation UX on the raid events page.
