@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guildwise.IntegrationTests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guildwise.ArchitectureTests", "tests\Guildwise.ArchitectureTests\Guildwise.ArchitectureTests.csproj", "{59177297-E07B-4772-9FC0-745309EABA72}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guildwise.Web.Tests", "tests\Guildwise.Web.Tests\Guildwise.Web.Tests.csproj", "{D3C4D7F1-EFC5-4B46-876F-AEB9DAB95044}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{59177297-E07B-4772-9FC0-745309EABA72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59177297-E07B-4772-9FC0-745309EABA72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59177297-E07B-4772-9FC0-745309EABA72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3C4D7F1-EFC5-4B46-876F-AEB9DAB95044}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3C4D7F1-EFC5-4B46-876F-AEB9DAB95044}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3C4D7F1-EFC5-4B46-876F-AEB9DAB95044}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3C4D7F1-EFC5-4B46-876F-AEB9DAB95044}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D9756154-8787-43DE-B04B-F9157F65935E} = {8846385C-1898-4FB5-9730-877BCF1189DD}
@@ -61,5 +67,6 @@ Global
 		{D756AFF3-00FD-4E67-89B1-68AF2242D150} = {44FF29BE-B546-4F45-B60E-82A24B682DA9}
 		{4749571F-AEDF-4412-A188-2A508694A302} = {44FF29BE-B546-4F45-B60E-82A24B682DA9}
 		{59177297-E07B-4772-9FC0-745309EABA72} = {44FF29BE-B546-4F45-B60E-82A24B682DA9}
+		{D3C4D7F1-EFC5-4B46-876F-AEB9DAB95044} = {44FF29BE-B546-4F45-B60E-82A24B682DA9}
 	EndGlobalSection
 EndGlobal

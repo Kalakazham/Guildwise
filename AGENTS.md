@@ -32,6 +32,10 @@ The current goal is to build a useful guild and raid roster management tool befo
   - Contains unit tests for Domain and Application.
   - Must not use real databases, network calls or web hosts.
 
+- `tests/Guildwise.Web.Tests`
+  - Contains fast bUnit component tests for Blazor components.
+  - Must not use a real browser, real database or Testcontainers.
+
 - `tests/Guildwise.IntegrationTests`
   - Contains integration tests for endpoints, persistence and application wiring.
   - May reference Web, Application and Infrastructure.
@@ -252,13 +256,17 @@ WoWAudit, Blizzard WoW API, Raider.IO and Warcraft Logs are planned future sourc
 
 - Add or update tests for meaningful domain or application behavior.
 - Unit tests should be fast and isolated.
+- Web component tests should use bUnit for local component logic, conditional rendering, parameters and callbacks.
+- bUnit tests do not replace browser or end-to-end tests; Playwright tests are tracked separately.
+- Run Web component tests locally with `dotnet test tests/Guildwise.Web.Tests/Guildwise.Web.Tests.csproj`.
 - Integration tests should verify that important flows work through real application wiring.
 - Architecture tests should enforce layer boundaries.
-- CI runs architecture tests without coverage, and runs unit and integration tests with coverage collection.
-- CI merges unit and integration coverage into HTML, text and Cobertura reports and uploads them as the `coverage-report` artifact for 14 days.
+- CI runs architecture tests without coverage, and runs unit, Web component and integration tests with coverage collection.
+- CI merges unit, Web component and integration coverage into HTML, text and Cobertura reports and uploads them as the `coverage-report` artifact for 14 days.
 - The same project-specific test commands and local `reportgenerator` tool can be used to reproduce coverage locally.
 - Coverage currently has no hard minimum threshold; low coverage must not be hidden with unjustified product-code exclusions.
 - Coverage is a visibility signal and does not replace meaningful behavior tests.
+- Add bUnit coverage for new relevant Blazor component logic.
 - After changes, run:
 
 ```bash
