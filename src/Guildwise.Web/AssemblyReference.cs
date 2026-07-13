@@ -1,6 +1,6 @@
-﻿namespace Guildwise.Web;
+namespace Guildwise.Web;
 
 public static class AssemblyReference
 {
-    
+
 }

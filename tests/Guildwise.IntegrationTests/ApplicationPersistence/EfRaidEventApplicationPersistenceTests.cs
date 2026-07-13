@@ -15,6 +15,7 @@ using Guildwise.Domain;
 using Guildwise.Infrastructure.Persistence;
 using Guildwise.IntegrationTests.Persistence;
 namespace Guildwise.IntegrationTests;
+
 [Collection(PostgreSqlTestCollection.Name)]
 public sealed class EfRaidEventApplicationPersistenceTests : EfApplicationPersistenceTestBase
 {

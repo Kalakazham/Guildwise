@@ -2,6 +2,7 @@ using System.Reflection;
 using Guildwise.Domain;
 using static Guildwise.UnitTests.DomainModelTestSupport;
 namespace Guildwise.UnitTests;
+
 public sealed class RaidTeamTests
 {
     [Fact]

@@ -270,7 +270,8 @@ Solution-wide build and analyzer policy lives in `Directory.Build.props`.
 - Nullable reference types, implicit usings, .NET analyzers and `AnalysisLevel` are configured centrally.
 - Build, compiler, Roslyn analyzer and code-analysis warnings are treated as errors.
 - NuGet Audit checks direct and transitive dependencies and blocks known vulnerabilities from `moderate` severity upward.
-- `EnforceCodeStyleInBuild` and `dotnet format` are not enabled as build gates yet.
+- CI runs `dotnet format Guildwise.sln --verify-no-changes --severity error --no-restore` to block only error-level format and charset issues.
+- `EnforceCodeStyleInBuild` and broader `dotnet format` style gates are not enabled yet.
 - Pull requests are checked for whitespace errors in the actual PR diff.
 - Dependabot monitors NuGet and GitHub Actions dependencies weekly against `dev`.
 

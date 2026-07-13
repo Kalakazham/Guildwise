@@ -1,6 +1,6 @@
-﻿namespace Guildwise.Application;
+namespace Guildwise.Application;
 
-public static  class AssemblyReference
+public static class AssemblyReference
 {
-    
+
 }

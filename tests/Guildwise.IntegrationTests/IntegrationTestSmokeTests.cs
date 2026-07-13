@@ -1,4 +1,4 @@
-﻿namespace Guildwise.IntegrationTests;
+namespace Guildwise.IntegrationTests;
 
 public sealed class IntegrationTestSmokeTests
 {
