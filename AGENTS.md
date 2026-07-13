@@ -265,6 +265,15 @@ dotnet test
 
 Guildwise uses `tools/check-code-quality.ps1` to enforce lightweight file-size guardrails and known-debt baselines.
 
+Solution-wide build and analyzer policy lives in `Directory.Build.props`.
+
+- Nullable reference types, implicit usings, .NET analyzers and `AnalysisLevel` are configured centrally.
+- Build, compiler, Roslyn analyzer and code-analysis warnings are treated as errors.
+- NuGet Audit checks direct and transitive dependencies and blocks known vulnerabilities from `moderate` severity upward.
+- `EnforceCodeStyleInBuild` and `dotnet format` are not enabled as build gates yet.
+- Pull requests are checked for whitespace errors in the actual PR diff.
+- Dependabot monitors NuGet and GitHub Actions dependencies weekly against `dev`.
+
 - Run `pwsh -NoProfile -File tools/check-code-quality.ps1` before completing implementation work.
 - Do not create new large files that violate the current gates.
 - Do not let known-debt files grow beyond `tools/code-quality-baseline.json`.
