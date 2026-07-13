@@ -36,6 +36,13 @@ The current goal is to build a useful guild and raid roster management tool befo
   - Contains fast bUnit component tests for Blazor components.
   - Must not use a real browser, real database or Testcontainers.
 
+- `tests/Guildwise.E2ETests`
+  - Contains Playwright browser smoke tests for the started Blazor Web app.
+  - Uses real navigation, Blazor interactivity and cross-component UI flows.
+  - Must not change an existing developer database.
+  - The current E2E host forces InMemory persistence.
+  - Must not call external APIs.
+
 - `tests/Guildwise.IntegrationTests`
   - Contains integration tests for endpoints, persistence and application wiring.
   - May reference Web, Application and Infrastructure.
@@ -259,6 +266,14 @@ WoWAudit, Blizzard WoW API, Raider.IO and Warcraft Logs are planned future sourc
 - Web component tests should use bUnit for local component logic, conditional rendering, parameters and callbacks.
 - bUnit tests do not replace browser or end-to-end tests; Playwright tests are tracked separately.
 - Run Web component tests locally with `dotnet test tests/Guildwise.Web.Tests/Guildwise.Web.Tests.csproj`.
+- Playwright E2E tests live in `tests/Guildwise.E2ETests`.
+- The current E2E host uses InMemory persistence and must not touch a developer PostgreSQL database.
+- Run local E2E tests with `dotnet test tests/Guildwise.E2ETests/Guildwise.E2ETests.csproj`.
+- See `docs/testing/ui-tests.md` for local Playwright setup and execution.
+- Playwright smoke tests run in a separate merge-blocking CI job and remain outside coverage.
+- The Playwright CI job installs Chromium and uploads app logs, trace and screenshot as `playwright-artifacts` on failure.
+- New full browser flows should use the existing Playwright diagnostic support.
+- Playwright tests must not use developer databases or external APIs.
 - Integration tests should verify that important flows work through real application wiring.
 - Architecture tests should enforce layer boundaries.
 - CI runs architecture tests without coverage, and runs unit, Web component and integration tests with coverage collection.

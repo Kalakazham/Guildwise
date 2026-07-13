@@ -79,3 +79,46 @@ jobs:
           path: artifacts/coverage/report
           if-no-files-found: error
           retention-days: 14
+
+  playwright-smoke:
+    name: Playwright smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-test
+    env:
+      BROWSER: chromium
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore packages
+        run: dotnet restore Guildwise.sln
+
+      - name: Build Web
+        run: dotnet build src/Guildwise.Web/Guildwise.Web.csproj --no-restore
+
+      - name: Build E2E tests
+        run: dotnet build tests/Guildwise.E2ETests/Guildwise.E2ETests.csproj --no-restore
+
+      - name: Install Chromium with dependencies
+        run: pwsh tests/Guildwise.E2ETests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        run: dotnet test tests/Guildwise.E2ETests/Guildwise.E2ETests.csproj --no-build --no-restore
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: artifacts/playwright
+          if-no-files-found: warn
+          retention-days: 14

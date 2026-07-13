@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Added a Playwright E2E test foundation with browser navigation and initial roster, raid-team and raid-event smoke coverage, merge-blocking CI execution and failure diagnostics.
 - Added a dedicated bUnit test project and initial regression tests for raid-team Blazor components.
 - Added architecture tests for framework-free Application code, UI-free Infrastructure and persistence-free Web components.
 - Added the raid event planning foundation with Domain, Application and persistence support.
