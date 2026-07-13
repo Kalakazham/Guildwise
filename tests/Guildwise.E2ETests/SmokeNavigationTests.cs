@@ -3,7 +3,9 @@ using Microsoft.Playwright;
 namespace Guildwise.E2ETests;
 
 [Collection(E2ETestCollection.Name)]
-public sealed class SmokeNavigationTests(GuildwiseWebAppFixture app) : PlaywrightTestBase
+public sealed class SmokeNavigationTests(GuildwiseWebAppFixture app) :
+    PlaywrightTestBase,
+    IClassFixture<GuildwiseWebAppFixture>
 {
     [Fact]
     public async Task App_Starts_And_Primary_Navigation_Renders_Pages()

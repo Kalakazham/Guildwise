@@ -61,6 +61,15 @@ The `playwright-smoke` job runs after `build-test`.
 
 It installs Chromium with the required Linux dependencies, runs E2E tests headless and keeps using InMemory persistence through the E2E host fixture.
 
+## Smoke-Flows
+
+The current Playwright suite covers:
+
+* primary navigation across the main Guildwise pages
+* sample roster seeding and roster overview visibility
+* opening the seeded `Team One` raid team
+* creating and selecting a raid event for the seeded team
+
 ## Fehlerdiagnose
 
 On failed Playwright runs, GitHub Actions uploads the `playwright-artifacts` artifact for 14 days.
