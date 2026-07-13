@@ -22,6 +22,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Changed
 
+- Hardened CI and solution-wide analyzer policy so warnings and NuGet audit findings block builds.
 - Refactored remaining large Web pages and accumulated test suites to clear code quality warnings.
 - Refactored the raid events page into focused Web components without changing behavior.
 
