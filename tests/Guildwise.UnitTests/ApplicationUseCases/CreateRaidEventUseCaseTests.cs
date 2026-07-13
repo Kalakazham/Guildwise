@@ -189,4 +189,3 @@ public sealed class CreateRaidEventUseCaseTests
         AssertFailure(result, FailureType.Validation, "after");
     }
 }
-

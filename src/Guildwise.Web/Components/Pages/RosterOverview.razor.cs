@@ -96,4 +96,3 @@ public partial class RosterOverview
             && roster.Summary.CharacterCount == 0
             && roster.Summary.RaidTeamCount == 0;
 }
-

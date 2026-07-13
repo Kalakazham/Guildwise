@@ -107,4 +107,3 @@ public sealed class ReadRaidEventUseCaseTests
         Assert.Empty(byGuildAndRaidTeam);
     }
 }
-

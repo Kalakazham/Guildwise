@@ -85,4 +85,3 @@ public sealed class CancelRaidEventUseCaseTests
         Assert.Equal(RaidEventStatus.Cancelled, secondCancel.Status);
     }
 }
-
