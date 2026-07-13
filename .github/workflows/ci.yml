@@ -40,14 +40,39 @@ jobs:
       - name: Restore local tools
         run: dotnet tool restore
 
-      - name: Code quality guardrails
-        run: pwsh -NoProfile -File tools/check-code-quality.ps1
-
       - name: Format error gate
         run: dotnet format Guildwise.sln --verify-no-changes --severity error --no-restore
+
+      - name: Code quality guardrails
+        run: pwsh -NoProfile -File tools/check-code-quality.ps1
 
       - name: Build
         run: dotnet build Guildwise.sln --no-restore
 
-      - name: Test
-        run: dotnet test Guildwise.sln --no-build
+      - name: Run architecture tests
+        run: dotnet test tests/Guildwise.ArchitectureTests/Guildwise.ArchitectureTests.csproj --no-build --no-restore
+
+      - name: Run unit tests with coverage
+        run: dotnet test tests/Guildwise.UnitTests/Guildwise.UnitTests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/unit
+
+      - name: Run integration tests with coverage
+        run: dotnet test tests/Guildwise.IntegrationTests/Guildwise.IntegrationTests.csproj --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/raw/integration
+
+      - name: Generate coverage report
+        run: >
+          dotnet tool run reportgenerator --
+          "-reports:artifacts/coverage/raw/unit/**/coverage.cobertura.xml;artifacts/coverage/raw/integration/**/coverage.cobertura.xml"
+          "-targetdir:artifacts/coverage/report"
+          "-reporttypes:Html;TextSummary;Cobertura"
+          "-assemblyfilters:+Guildwise.*;-Guildwise.UnitTests;-Guildwise.IntegrationTests;-Guildwise.ArchitectureTests"
+
+      - name: Show coverage summary
+        run: cat artifacts/coverage/report/Summary.txt
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: artifacts/coverage/report
+          if-no-files-found: error
+          retention-days: 14

@@ -32,6 +32,7 @@ riderModule.iml
 
 # Test results / coverage
 TestResults/
+artifacts/coverage/
 *.trx
 *.coverage
 *.coveragexml
