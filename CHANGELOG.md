@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Added raid event signup overview UI with summary, role composition and signup list display.
 - Added raid event signup management UX for setting Signed, Tentative and Declined statuses.
 - Added code quality guardrails for file-size targets, known-debt baselines and CI checks.
+- Added CI coverage reporting for unit and integration tests with a downloadable merged coverage report.
 
 ### Changed
 

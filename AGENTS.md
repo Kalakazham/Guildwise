@@ -254,6 +254,11 @@ WoWAudit, Blizzard WoW API, Raider.IO and Warcraft Logs are planned future sourc
 - Unit tests should be fast and isolated.
 - Integration tests should verify that important flows work through real application wiring.
 - Architecture tests should enforce layer boundaries.
+- CI runs architecture tests without coverage, and runs unit and integration tests with coverage collection.
+- CI merges unit and integration coverage into HTML, text and Cobertura reports and uploads them as the `coverage-report` artifact for 14 days.
+- The same project-specific test commands and local `reportgenerator` tool can be used to reproduce coverage locally.
+- Coverage currently has no hard minimum threshold; low coverage must not be hidden with unjustified product-code exclusions.
+- Coverage is a visibility signal and does not replace meaningful behavior tests.
 - After changes, run:
 
 ```bash
