@@ -197,4 +197,3 @@ public partial class RaidEvents
     private RaidTeamDto? FindRaidTeam(RaidEventDto raidEvent)
         => FindGuild(raidEvent)?.RaidTeams.FirstOrDefault(raidTeam => raidTeam.Id == raidEvent.RaidTeamId);
 }
-

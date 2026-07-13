@@ -189,4 +189,3 @@ public sealed class UpdateRaidEventUseCaseTests
         AssertFailure(result, FailureType.Validation, "after");
     }
 }
-
